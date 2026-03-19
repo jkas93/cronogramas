@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Sign out route — clears the session and redirects to login.
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:3000'));
+  // Use the request origin so it works on both localhost and production (Vercel)
+  const origin = request.nextUrl.origin;
+  return NextResponse.redirect(new URL('/login', origin));
 }

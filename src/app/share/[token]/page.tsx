@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { SCurveChart } from '@/components/charts/SCurveChart';
 import { GanttView } from '@/components/gantt/GanttView';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -135,7 +137,7 @@ export default async function SharePage({ params }: Props) {
               Vista de Cliente — Solo Lectura
             </span>
             <div className="text-xs text-surface-200/60 font-medium">
-              {project.start_date} al {project.end_date}
+              {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} → {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
             </div>
           </div>
         </div>

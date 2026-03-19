@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { SCurveChart } from '@/components/charts/SCurveChart';
 import { GanttView } from '@/components/gantt/GanttView';
 import { use } from 'react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function PrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,7 +60,9 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
          <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-primary-800 uppercase tracking-widest">{project.name}</h1>
             <p className="text-sm text-surface-400 mt-2 font-medium">REPORTE OFICIAL DE AVANCE</p>
-            <p className="text-xs text-surface-400 mt-1">{project.start_date} al {project.end_date}</p>
+            <p className="text-xs text-surface-400 mt-1">
+              {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} → {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
+            </p>
          </div>
 
          {/* Curva S */}
@@ -83,22 +87,14 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
 
       </div>
 
-      <style jsx global>{`
+      {/* Print-specific styles — standard style tag, works in App Router */}
+      <style>{`
         @media print {
-          body {
-            background-color: white !important;
-            color: black !important;
-          }
-          .glass-card, .bg-mesh, .btn-primary {
-            display: none !important;
-          }
-          .page-break-after {
-            page-break-after: always;
-          }
-          /* Adjust Gantt for print if needed */
-          .gantt_container {
-            border: 1px solid #ddd !important;
-          }
+          body { background-color: white !important; color: black !important; }
+          .glass-card, .bg-mesh { display: none !important; }
+          .page-break-after { page-break-after: always; }
+          .gantt_container { border: 1px solid #ddd !important; }
+          #__next-build-watcher, .nextjs-toast-errors-parent { display: none !important; }
         }
       `}</style>
     </div>
