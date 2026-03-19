@@ -1,0 +1,6 @@
+﻿src/components/project/DailyPulseView.tsx(348,20): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/project/DailyPulseView.tsx(357,24): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/project/DailyPulseView.tsx(376,30): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/project/DailyPulseView.tsx(469,31): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/project/DailyPulseView.tsx(472,25): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/project/DailyPulseView.tsx(474,21): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
