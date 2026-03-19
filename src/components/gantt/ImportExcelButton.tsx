@@ -153,24 +153,24 @@ export function ImportExcelButton({ projectId }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <button 
         onClick={handleDownloadTemplate} 
         disabled={loading}
-        className="btn-secondary text-[10px] px-2 py-1 flex items-center gap-1 opacity-70 hover:opacity-100"
+        className="btn-secondary text-xs px-2 py-1.5 flex items-center gap-1.5 opacity-70 hover:opacity-100"
         title="Descargar Plantilla Excel"
       >
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
         </svg>
-        Plantilla
+        <span className="hidden md:inline">Plantilla</span>
       </button>
 
-      <label className={`btn-primary text-xs flex items-center gap-1.5 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <label className={`btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`} title="Importar Excel">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
         </svg>
-        {loading ? 'Importando...' : 'Importar Excel'}
+        <span className="hidden sm:inline">{loading ? 'Importando...' : 'Importar Excel'}</span>
         <input 
           ref={fileInputRef}
           type="file" 
@@ -179,7 +179,7 @@ export function ImportExcelButton({ projectId }: Props) {
           onChange={processFile} 
         />
       </label>
-      {error && <span className="text-danger-400 text-[10px]">{error}</span>}
+      {error && <span className="absolute mt-10 right-0 text-danger-400 text-[10px] truncate max-w-[200px]" title={error}>{error}</span>}
     </div>
   );
 }

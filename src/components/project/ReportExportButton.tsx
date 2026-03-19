@@ -11,7 +11,7 @@ export function ReportExportButton({ projectId }: ReportExportButtonProps) {
     <Link
       href={`/projects/${projectId}/print`}
       target="_blank"
-      className="btn-primary text-xs flex items-center gap-2 flex-shrink-0"
+      className="btn-secondary text-xs flex items-center gap-2 flex-shrink-0"
       title="Generar Reporte PDF (Gantt + Curva S)"
     >
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

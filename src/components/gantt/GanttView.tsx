@@ -368,52 +368,59 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           Gantt Interactivo: Arrastra bordes para cambiar fechas.
         </h3>
         
-        <div className="md:ml-auto flex flex-wrap items-center gap-2 w-full md:w-auto">
-          {/* Botón de Pantalla Completa */}
-          <button onClick={() => setIsFullscreen(!isFullscreen)} className="btn-secondary text-xs px-2 py-1.5 flex items-center gap-1.5 flex-shrink-0" title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Sin distracciones)"}>
+        <div className="md:ml-auto flex flex-wrap items-center justify-end gap-1.5 w-full md:w-auto">
+          {/* Zoom Toggle */}
+          <div className="flex bg-surface-900/50 rounded-lg p-1 border border-surface-700/50 mr-2">
+            <button onClick={() => handleZoomChange('day')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'day' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Días</button>
+            <button onClick={() => handleZoomChange('week')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'week' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Semanas</button>
+            <button onClick={() => handleZoomChange('month')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'month' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Meses</button>
+          </div>
+
+          {/* Sincronizar */}
+          {!readonly && (
+            <button onClick={() => router.refresh()} title="Sincroniza y descarga los últimos cambios de la base de datos a tu pantalla" className="p-2 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </button>
+          )}
+
+          {/* Resetear */}
+          {!readonly && (
+             <button 
+               onClick={async () => {
+                 if (window.confirm("¿Seguro que deseas ELIMINAR TODAS las partidas de este diagrama? Esta acción borrará el diagrama completo y no se puede deshacer.")) {
+                   try {
+                      await supabase.from('partidas').delete().eq('project_id', projectId);
+                      router.refresh();
+                   } catch(e) {}
+                 }
+               }}
+               className="p-2 text-surface-400 hover:text-danger-500 hover:bg-danger-500/10 rounded-lg transition-colors"
+               title="Resetear todo el diagrama"
+             >
+               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+               </svg>
+             </button>
+          )}
+
+          {/* Pantalla Completa */}
+          <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 text-surface-400 hover:text-accent-400 hover:bg-accent-500/10 rounded-lg transition-colors" title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}>
             {isFullscreen ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M15 15v4.5m0-4.5h4.5m-4.5 0l5.25 5.25M15 9V4.5m0 4.5h4.5M15 9l5.25-5.25M9 15v4.5m0-4.5H4.5m4.5 0l-5.25 5.25" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
               </svg>
             )}
-            {isFullscreen ? 'Contraer' : 'Expandir'}
           </button>
           
-          <div className="flex bg-surface-900/50 rounded-lg p-1 border border-accent-400/10">
-            <button onClick={() => handleZoomChange('day')} className={`px-3 py-1 text-xs rounded-md ${zoomLevel === 'day' ? 'bg-accent-400/20 text-accent-400' : 'text-surface-200/60 hover:text-surface-100'}`}>Días</button>
-            <button onClick={() => handleZoomChange('week')} className={`px-3 py-1 text-xs rounded-md ${zoomLevel === 'week' ? 'bg-accent-400/20 text-accent-400' : 'text-surface-200/60 hover:text-surface-100'}`}>Semanas</button>
-            <button onClick={() => handleZoomChange('month')} className={`px-3 py-1 text-xs rounded-md ${zoomLevel === 'month' ? 'bg-accent-400/20 text-accent-400' : 'text-surface-200/60 hover:text-surface-100'}`}>Meses</button>
-          </div>
-          
-          {!readonly && (
-             <>
-                <button 
-                  onClick={async () => {
-                    if (window.confirm("¿Seguro que deseas ELIMINAR TODAS las partidas de este diagrama? Esta acción borrará el diagrama completo y no se puede deshacer.")) {
-                      try {
-                         await supabase.from('partidas').delete().eq('project_id', projectId);
-                         router.refresh();
-                      } catch(e) {}
-                    }
-                  }}
-                  className="btn-danger text-xs px-3 py-1.5 flex items-center gap-1.5"
-                  title="Resetear todo el diagrama"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                  Resetear
-                </button>
-                <button onClick={() => router.refresh()} title="Sincroniza y descarga los últimos cambios de la base de datos a tu pantalla" className="btn-secondary text-xs">
-                  Sincronizar
-                </button>
-                <ImportExcelButton projectId={projectId} />
-             </>
-          )}
+          <div className="w-px h-6 bg-surface-700/50 mx-1 hidden md:block"></div>
+
+          {!readonly && <ImportExcelButton projectId={projectId} />}
         </div>
       </div>
 
