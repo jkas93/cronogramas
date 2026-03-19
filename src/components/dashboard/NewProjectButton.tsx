@@ -27,6 +27,12 @@ export function NewProjectButton() {
       return;
     }
 
+    // [AUTO-HEAL FIX]: If the user accidentally wiped their "profiles" DB table, 
+    // the trigger is gone but their Auth Session remains. When they insert a project,
+    // the DB throws a FATAL 500 because owner_id points to a non-existent profile.
+    // Let's self-heal their profile just in case before inserting.
+    await supabase.from('profiles').insert({ id: user.id }).select().single();
+
     const { data, error: insertError } = await supabase
       .from('projects')
       .insert({
@@ -40,7 +46,8 @@ export function NewProjectButton() {
       .single();
 
     if (insertError) {
-      setError(insertError.message);
+      console.error(insertError);
+      setError('Error al crear proyecto: ' + insertError.message);
       setLoading(false);
     } else {
       // Also add the owner as an admin member
@@ -165,8 +172,14 @@ export function NewProjectButton() {
                   disabled={loading}
                   className="btn-primary flex-1 flex items-center justify-center gap-2"
                 >
-                  {loading && <span className="spinner" />}
-                  {loading ? 'Creando...' : 'Crear Proyecto'}
+                  {loading ? (
+                    <>
+                      <span className="spinner" />
+                      <span>Creando...</span>
+                    </>
+                  ) : (
+                    <span>Crear Proyecto</span>
+                  )}
                 </button>
               </div>
             </form>
