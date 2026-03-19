@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { DeleteProjectButton } from '@/components/project/DeleteProjectButton';
 import { ShareModal } from '@/components/project/ShareModal';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,7 +87,7 @@ export default async function ProjectPage({ params }: Props) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-[11px] md:text-xs text-surface-200/40 bg-surface-900/30 px-3 py-1.5 rounded-md border border-surface-700/30 flex-shrink-0">
             <span className="font-medium">Período:</span>{' '}
-            {project.start_date} <span className="text-accent-400/70">→</span> {project.end_date}
+            {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} <span className="text-accent-400/70">→</span> {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
           </div>
           
           <DeleteProjectButton projectId={project.id} projectName={project.name} />

@@ -106,7 +106,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-center text-sm text-surface-200/50 mt-6">
           ¿No tienes cuenta?{' '}
-          <Link href="/register" className="text-accent-400 hover:text-accent-300 font-medium">
+          <Link href="/register" className="text-accent-400 hover:text-accent-300 font-medium" rel="nofollow">
             Regístrate aquí
           </Link>
         </p>
