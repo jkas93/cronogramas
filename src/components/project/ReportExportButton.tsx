@@ -9,7 +9,7 @@ interface ReportExportButtonProps {
 export function ReportExportButton({ projectId }: ReportExportButtonProps) {
   return (
     <Link
-      href={`/projects/${projectId}/print`}
+      href={`/print/${projectId}`}
       target="_blank"
       className="btn-secondary text-xs flex items-center gap-2 flex-shrink-0"
       title="Generar Reporte PDF (Gantt + Curva S)"
