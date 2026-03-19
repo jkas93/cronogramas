@@ -7,7 +7,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  // Use the request origin so it works on both localhost and production (Vercel)
   const origin = request.nextUrl.origin;
-  return NextResponse.redirect(new URL('/login', origin));
+  return NextResponse.redirect(new URL('/login', origin), { status: 303 });
 }
