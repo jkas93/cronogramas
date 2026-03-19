@@ -54,6 +54,15 @@ export default async function ProtectedLayout({
             </svg>
             Dashboard
           </Link>
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-accent-400 hover:bg-accent-400/10 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Mi Perfil
+          </Link>
         </nav>
 
         {/* User section */}
@@ -95,12 +104,12 @@ export default async function ProtectedLayout({
           </svg>
           <span className="text-[10px] font-medium tracking-wide">Inicio</span>
         </Link>
-        <div className="flex flex-col items-center gap-1 text-slate-400">
+        <Link href="/profile" className="flex flex-col items-center gap-1 text-slate-400 hover:text-accent-400 transition-colors">
           <div className="w-6 h-6 rounded-full bg-accent-400/20 flex items-center justify-center text-[11px] font-bold text-accent-400">
              {(profile?.full_name || user.email || 'U').charAt(0).toUpperCase()}
           </div>
           <span className="text-[10px] font-medium tracking-wide">Perfil</span>
-        </div>
+        </Link>
         <form action="/auth/signout" method="POST" className="flex">
           <button type="submit" className="flex flex-col items-center gap-1 text-slate-400 hover:text-danger-400 transition-colors">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { DeleteProjectButton } from '@/components/project/DeleteProjectButton';
 import { ShareModal } from '@/components/project/ShareModal';
+import { TeamModal } from '@/components/project/TeamModal';
+import { ReportExportButton } from '@/components/project/ReportExportButton';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -27,6 +29,9 @@ export default async function ProjectPage({ params }: Props) {
   if (error || !project) {
     notFound();
   }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user?.id === project.owner_id;
 
   // Fetch partidas with items and activities
   const { data: partidas } = await supabase
@@ -91,6 +96,14 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           
           <DeleteProjectButton projectId={project.id} projectName={project.name} />
+          
+          <ReportExportButton projectId={project.id} />
+          
+          <TeamModal 
+            projectId={project.id} 
+            projectName={project.name} 
+            isOwner={isOwner} 
+          />
           
           <ShareModal 
             projectId={project.id} 
