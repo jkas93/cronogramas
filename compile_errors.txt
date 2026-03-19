@@ -1,0 +1,3 @@
+﻿src/components/gantt/GanttView.tsx(69,45): error TS7006: Parameter 'start' implicitly has an 'any' type.
+src/components/gantt/GanttView.tsx(69,52): error TS7006: Parameter 'end' implicitly has an 'any' type.
+src/components/gantt/GanttView.tsx(69,57): error TS7006: Parameter 'task' implicitly has an 'any' type.

@@ -1,0 +1,353 @@
+@import "tailwindcss";
+
+/* =============================================================
+   CRONOGRAMA — Golden Tower Construction Brand System
+   Dark-first, glassmorphism, premium gold & navy aesthetics
+   Brand: goldentower.com.pe
+   ============================================================= */
+
+@theme {
+  /* === Golden Tower Brand Palette ===
+     Primary: Navy Deep Blue (fondos, headers)
+     Accent/Golden: Oro corporativo (CTAs, highlights)
+     Surface: Dark navy tones for cards/backgrounds
+  */
+
+  /* Primary — Deep Navy Blue */
+  --color-primary-50: #e6ecf5;
+  --color-primary-100: #b8c8e2;
+  --color-primary-200: #8aa4cf;
+  --color-primary-300: #5c80bc;
+  --color-primary-400: #3366a8;
+  --color-primary-500: #1a4d8f;
+  --color-primary-600: #0e3366;
+  --color-primary-700: #0a1f40;
+  --color-primary-800: #000B1C;
+  --color-primary-900: #000510;
+
+  /* Accent — Golden / Oro corporativo */
+  --color-accent-300: #fad956;
+  --color-accent-400: #F7C20E;
+  --color-accent-500: #daa90c;
+  --color-accent-600: #b8900a;
+
+  /* Danger */
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+
+  /* Warning (sames as golden but shifted) */
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+
+  /* Success */
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+
+  /* Surface — Light Theme SaaS colors */
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #1e293b; /* Texto fuerte (titles) */
+  --color-surface-200: #475569; /* Texto secundario */
+  --color-surface-300: #64748b; /* Texto terciario */
+  --color-surface-600: #cbd5e1; /* Bordes */
+  --color-surface-700: #e2e8f0; /* Bordes suaves */
+  --color-surface-800: #f1f5f9; /* Fondos secundarios */
+  --color-surface-900: #ffffff; /* Fondos tarjetas (blanco) */
+  --color-surface-950: #f4f6fb; /* Fondo global (app) */
+}
+
+:root {
+  --font-sans: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-surface-950);
+  color: var(--color-surface-100);
+  min-height: 100vh;
+}
+
+/* =============================================================
+   SaaS Panel effect — Clean white with subtle shadows
+   ============================================================= */
+.glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 11, 28, 0.06);
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(247, 194, 14, 0.30);
+  box-shadow: 0 8px 25px rgba(247, 194, 14, 0.08);
+}
+
+/* =============================================================
+   Button styles — Golden Tower branded
+   ============================================================= */
+
+/* Primary Button — Golden CTA */
+.btn-primary {
+  background: linear-gradient(135deg, #F7C20E, #daa90c);
+  color: #000B1C;
+  font-weight: 700;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #fad956, #F7C20E);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(247, 194, 14, 0.35);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary Button — Navy outline */
+.btn-secondary {
+  background: #ffffff;
+  color: var(--color-primary-800);
+  font-weight: 500;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-surface-600);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-800);
+  border-color: rgba(247, 194, 14, 0.60);
+  color: var(--color-primary-800);
+}
+
+/* Danger Button */
+.btn-danger {
+  background: linear-gradient(135deg, var(--color-danger-600), var(--color-danger-500));
+  color: white;
+  font-weight: 600;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, var(--color-danger-500), var(--color-danger-400));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+/* =============================================================
+   Input styles — Light UI Default state
+   ============================================================= */
+.input-field {
+  background: #ffffff;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  color: var(--color-surface-100);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(26, 77, 143, 0.12);
+}
+
+.input-field::placeholder {
+  color: var(--color-surface-300);
+}
+
+/* =============================================================
+   Gradient text — Golden Tower branded
+   ============================================================= */
+.gradient-text {
+  background: linear-gradient(135deg, #F7C20E, #fad956);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* =============================================================
+   Background mesh — Clean enterprise pattern
+   ============================================================= */
+.bg-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--color-surface-950);
+  background-image: 
+    radial-gradient(circle at 100% 0%, #ffffff 10%, transparent 60%),
+    radial-gradient(circle at 0% 100%, #ffffff 10%, transparent 60%);
+}
+
+/* =============================================================
+   Scrollbar — Golden Tower style
+   ============================================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(247, 194, 14, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(247, 194, 14, 0.45);
+}
+
+/* =============================================================
+   Loading spinner
+   ============================================================= */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(247, 194, 14, 0.2);
+  border-top-color: #F7C20E;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =============================================================
+   Fade-in animation
+   ============================================================= */
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================================================
+   dhtmlx-gantt overrides — Clean Grid Design
+   ============================================================= */
+.gantt_container {
+  background: #ffffff !important;
+  border: 1px solid var(--color-surface-700) !important;
+  font-family: var(--font-sans) !important;
+  border-radius: 12px;
+}
+
+.gantt_grid,
+.gantt_task {
+  background: #ffffff !important;
+}
+
+.gantt_grid_head_cell,
+.gantt_scale_cell {
+  background: #f8fafc !important;
+  color: var(--color-surface-200) !important;
+  border-color: var(--color-surface-700) !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+}
+
+.gantt_cell,
+.gantt_row {
+  border-color: var(--color-surface-700) !important;
+  color: var(--color-surface-100) !important;
+}
+
+.gantt_row:hover,
+.gantt_row.odd:hover {
+  background: #f1f5f9 !important;
+}
+
+.gantt_row.odd {
+  background: #fafbfc !important;
+}
+
+.gantt_task_line:not(.is-partida-bar):not(.is-item-bar) {
+  background: linear-gradient(135deg, #F7C20E, #daa90c) !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(247, 194, 14, 0.25) !important;
+}
+
+.gantt_task_line.is-partida-bar {
+  background: #334155 !important;
+  height: 12px !important;
+  line-height: 12px !important;
+  margin-top: 10px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0,0,0,0.4) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.gantt_task_line.is-item-bar {
+  background: #64748b !important;
+  height: 8px !important;
+  line-height: 8px !important;
+  margin-top: 12px !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(0,0,0,0.2) !important;
+  box-shadow: none !important;
+}
+
+.is-partida-bar .gantt_task_content,
+.is-item-bar .gantt_task_content {
+  display: none !important;
+}
+
+.gantt_task_line.gantt_project {
+  background: linear-gradient(135deg, #0e3366, #1a4d8f) !important;
+}
+
+.gantt_task_progress {
+  background: rgba(0, 11, 28, 0.35) !important;
+  border-radius: 4px !important;
+}
+
+.gantt_link_line_right,
+.gantt_link_line_left,
+.gantt_link_line_up,
+.gantt_link_line_down {
+  background: var(--color-accent-400) !important;
+}
