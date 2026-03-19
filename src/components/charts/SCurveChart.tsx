@@ -113,7 +113,7 @@ export function SCurveChart({ project, partidas, dailyProgress }: Props) {
 
   // Sample data points for readability (every 7 days for long projects)
   const sampledPoints = scurveData.points.length > 60
-    ? scurveData.points.filter((_: any, i: number) => i % 7 === 0 || i === scurveData.points.length - 1)
+    ? scurveData.points.filter((_: any, i: number, arr: any[]) => i % 7 === 0 || i === arr.length - 1 || arr[i].date === todayStr)
     : scurveData.points;
 
   // Determine SPI color

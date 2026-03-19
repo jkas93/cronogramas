@@ -68,8 +68,18 @@ export function calculateSCurve(
   const pStart = parseISO(projectStartDate);
   const pEnd = parseISO(projectEndDate);
 
-  // Generate all days in the project timeline
-  const allDays = eachDayOfInterval({ start: pStart, end: pEnd });
+  // Extend timeline to cover ALL activity dates (matching Gantt's fit_tasks behavior)
+  let timelineStart = pStart;
+  let timelineEnd = pEnd;
+  for (const a of activities) {
+    const aStart = parseISO(a.start_date);
+    const aEnd = parseISO(a.end_date);
+    if (isBefore(aStart, timelineStart)) timelineStart = aStart;
+    if (isAfter(aEnd, timelineEnd)) timelineEnd = aEnd;
+  }
+
+  // Generate all days in the extended timeline
+  const allDays = eachDayOfInterval({ start: timelineStart, end: timelineEnd });
 
   // Total weight across all activities
   const totalWeight = activities.reduce((sum, a) => sum + Number(a.weight), 0);
