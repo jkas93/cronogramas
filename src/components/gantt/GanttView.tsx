@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ImportExcelButton } from './ImportExcelButton';
+import { addDays, subDays, parseISO, format } from 'date-fns';
 
 interface Props {
   projectId: string;
@@ -223,7 +224,8 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
               text: activity.name,
               parent: `i_${item.id}`,
               start_date: activity.start_date,
-              end_date: activity.end_date,
+              // DHTMLX requires exclusive end dates. We add 1 day so tasks look inclusive on screen.
+              end_date: activity.end_date ? format(addDays(parseISO(activity.end_date), 1), 'yyyy-MM-dd') : null,
               weight: activity.weight,
               progress: Math.min(totalProgress / 100, 1),
               color: '#F7C20E', // Golden Tower gold
@@ -295,12 +297,16 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           task.db_type = 'activity';
           task.color = '#F7C20E';
           const sd = task.start_date || new Date();
-          const ed = task.end_date || new Date();
+          const edRaw = task.end_date || new Date(); // DHTMLX sends an exclusive end date
+
+          // Subtract 1 day so the DB stores the actual working inclusive date
+          const edInclusive = subDays(edRaw, 1);
+
           const { data } = await supabase.from('activities').insert({ 
             item_id: parentTask.db_id, 
             name: task.text || 'Nueva Actividad',
-            start_date: sd.toISOString().split('T')[0],
-            end_date: ed.toISOString().split('T')[0],
+            start_date: format(sd, 'yyyy-MM-dd'),
+            end_date: format(edInclusive, 'yyyy-MM-dd'),
             weight: parseFloat(task.weight) || 1
           }).select().single();
           if (data) {
@@ -319,11 +325,15 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           await supabase.from('items').update({ name: task.text }).eq('id', task.db_id);
         } else if (task.db_type === 'activity') {
           const sd = task.start_date || new Date();
-          const ed = task.end_date || new Date();
+          const edRaw = task.end_date || new Date();
+
+          // Subtract 1 day so the DB stores the actual working inclusive date
+          const edInclusive = subDays(edRaw, 1);
+
           await supabase.from('activities').update({ 
             name: task.text,
-            start_date: sd.toISOString().split('T')[0],
-            end_date: ed.toISOString().split('T')[0],
+            start_date: format(sd, 'yyyy-MM-dd'),
+            end_date: format(edInclusive, 'yyyy-MM-dd'),
             weight: parseFloat(task.weight) || 1
           }).eq('id', task.db_id);
         }
