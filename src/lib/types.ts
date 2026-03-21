@@ -64,6 +64,8 @@ export interface DailyProgress {
   notes: string | null;
   created_by: string | null;
   created_at: string;
+  has_restriction?: boolean;
+  restriction_reason?: string | null;
 }
 
 export interface Alert {

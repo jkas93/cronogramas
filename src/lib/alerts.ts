@@ -87,6 +87,21 @@ export function evaluateAlerts(
     }
   }
 
+  // 3. Daily restriction alerts
+  dailyProgress.filter(dp => dp.has_restriction && dp.date === today).forEach(dp => {
+    const activity = activities.find(a => a.id === dp.activity_id);
+    if (activity) {
+      newAlerts.push({
+        project_id: projectId,
+        activity_id: activity.id,
+        type: 'schedule_delay',
+        message: `Restricción reportada en "${activity.name}": ${dp.restriction_reason || 'Sin detalles'}`,
+        severity: 'critical',
+        is_read: false,
+      });
+    }
+  });
+
   return {
     newAlerts,
     spiIndex: scurveData.spiIndex,

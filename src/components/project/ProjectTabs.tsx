@@ -27,6 +27,10 @@ export function ProjectTabs({ project, partidas, dailyProgress, alerts }: Props)
   // Count unread alerts
   const unreadAlerts = alerts.filter((a) => !a.is_read).length;
 
+  // Count active restrictions for today
+  const todayStr = new Date().toISOString().split('T')[0];
+  const activeRestrictions = dailyProgress.filter((dp) => dp.date === todayStr && dp.has_restriction).length;
+
   return (
     <div>
       {/* Tab bar */}
@@ -48,6 +52,11 @@ export function ProjectTabs({ project, partidas, dailyProgress, alerts }: Props)
             {tab.id === 'alerts' && unreadAlerts > 0 && (
               <span className="w-5 h-5 rounded-full bg-danger-500 text-white text-xs flex items-center justify-center font-bold">
                 {unreadAlerts}
+              </span>
+            )}
+            {tab.id === 'progress' && activeRestrictions > 0 && (
+              <span className="w-5 h-5 rounded-full bg-danger-500 text-white text-xs flex items-center justify-center font-bold" title="Restricciones activas hoy">
+                {activeRestrictions}
               </span>
             )}
           </button>

@@ -13,7 +13,7 @@ interface Props {
 
 export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Props) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [editedValues, setEditedValues] = useState<Record<string, { percent: string, notes: string, files: File[] }>>({});
+  const [editedValues, setEditedValues] = useState<Record<string, { percent: string, notes: string, files: File[], hasRestriction: boolean, restrictionReason: string }>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,9 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
             totalProgress,
             existingTodayPercent: existingToday ? existingToday.progress_percent : null,
             existingTodayNotes: existingToday ? existingToday.notes : '',
-            existingTodayPhotos: existingToday ? existingToday.photo_urls : []
+            existingTodayPhotos: existingToday ? existingToday.photo_urls : [],
+            existingTodayRestriction: existingToday ? existingToday.has_restriction : false,
+            existingTodayRestrictionReason: existingToday ? existingToday.restriction_reason : ''
           };
         });
 
@@ -83,17 +85,74 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
     return count;
   }, [activeActivitiesByPartida, editedValues]);
 
+  const activeRestrictionsCount = useMemo(() => {
+    let count = 0;
+    activeActivitiesByPartida.forEach((p) => {
+      p.items.forEach((i: any) => {
+        i.activities.forEach((a: any) => {
+          const isRestricted = editedValues[a.id]?.hasRestriction !== undefined 
+            ? editedValues[a.id].hasRestriction 
+            : a.existingTodayRestriction;
+          if (isRestricted) count++;
+        });
+      });
+    });
+    return count;
+  }, [activeActivitiesByPartida, editedValues]);
+
   const handlePercentChange = (activityId: string, value: string) => {
     setEditedValues(prev => ({
       ...prev,
-      [activityId]: { ...prev[activityId], percent: value, notes: prev[activityId]?.notes || '', files: prev[activityId]?.files || [] }
+      [activityId]: { 
+        ...prev[activityId], 
+        percent: value, 
+        notes: prev[activityId]?.notes || '', 
+        files: prev[activityId]?.files || [],
+        hasRestriction: prev[activityId]?.hasRestriction || false,
+        restrictionReason: prev[activityId]?.restrictionReason || ''
+      }
     }));
   };
 
   const handleNotesChange = (activityId: string, value: string) => {
     setEditedValues(prev => ({
       ...prev,
-      [activityId]: { ...prev[activityId], percent: prev[activityId]?.percent || '', notes: value, files: prev[activityId]?.files || [] }
+      [activityId]: { 
+        ...prev[activityId], 
+        percent: prev[activityId]?.percent || '', 
+        notes: value, 
+        files: prev[activityId]?.files || [],
+        hasRestriction: prev[activityId]?.hasRestriction || false,
+        restrictionReason: prev[activityId]?.restrictionReason || ''
+      }
+    }));
+  };
+
+  const handleRestrictionToggle = (activityId: string, currentVal: boolean) => {
+    setEditedValues(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        percent: prev[activityId]?.percent || '',
+        notes: prev[activityId]?.notes || '',
+        files: prev[activityId]?.files || [],
+        hasRestriction: !currentVal,
+        restrictionReason: prev[activityId]?.restrictionReason || ''
+      }
+    }));
+  };
+
+  const handleRestrictionReasonChange = (activityId: string, value: string) => {
+    setEditedValues(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        percent: prev[activityId]?.percent || '',
+        notes: prev[activityId]?.notes || '',
+        files: prev[activityId]?.files || [],
+        hasRestriction: prev[activityId]?.hasRestriction || false,
+        restrictionReason: value
+      }
     }));
   };
 
@@ -108,7 +167,14 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
         }
         return {
           ...prev,
-          [activityId]: { ...prev[activityId], percent: prev[activityId]?.percent || '', notes: prev[activityId]?.notes || '', files: [...currentFiles, ...selectedFiles].slice(0, 3) }
+          [activityId]: { 
+            ...prev[activityId], 
+            percent: prev[activityId]?.percent || '', 
+            notes: prev[activityId]?.notes || '', 
+            files: [...currentFiles, ...selectedFiles].slice(0, 3),
+            hasRestriction: prev[activityId]?.hasRestriction || false,
+            restrictionReason: prev[activityId]?.restrictionReason || ''
+          }
         };
       });
     }
@@ -149,7 +215,10 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const activitiesToSave = Object.keys(editedValues).filter(id => editedValues[id].percent !== '');
+      const activitiesToSave = Object.keys(editedValues).filter(id => {
+        const val = editedValues[id];
+        return val.percent !== '' || val.notes !== '' || val.files.length > 0 || val.hasRestriction !== undefined || val.restrictionReason !== '';
+      });
 
       if (activitiesToSave.length === 0) {
         throw new Error("No hay cambios para guardar.");
@@ -178,7 +247,7 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
       }
 
       const promises = activitiesToSave.map(async (activityId) => {
-        const { percent, notes, files } = editedValues[activityId];
+        const { percent, notes, files, hasRestriction, restrictionReason } = editedValues[activityId] || {};
         const photoUrls: string[] = [];
         
         // Find existing activity info to keep old photos if we didn't add new ones? 
@@ -193,8 +262,12 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
         });
         
         const existingPhotos = activityInfo?.existingTodayPhotos || [];
+        const finalPercent = percent !== '' && percent !== undefined ? parseFloat(percent) : (activityInfo?.existingTodayPercent || 0);
+        const finalNotes = notes !== '' && notes !== undefined ? notes : activityInfo?.existingTodayNotes || null;
+        const finalRestriction = hasRestriction !== undefined ? hasRestriction : activityInfo?.existingTodayRestriction || false;
+        const finalReason = restrictionReason !== '' && restrictionReason !== undefined ? restrictionReason : activityInfo?.existingTodayRestrictionReason || null;
 
-        for (const file of files) {
+        for (const file of files || []) {
           const fileExt = file.name.split('.').pop();
           const fileName = `${projectId}/${activityId}/${selectedDate}_${Math.random().toString(36).substring(7)}.${fileExt}`;
           const { error: uploadError, data } = await supabase.storage
@@ -215,10 +288,12 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
             {
               activity_id: activityId,
               date: selectedDate,
-              progress_percent: parseFloat(percent),
-              notes: notes || null,
+              progress_percent: finalPercent,
+              notes: finalNotes,
               created_by: user?.id,
-              photo_urls: finalPhotos
+              photo_urls: finalPhotos,
+              has_restriction: finalRestriction,
+              restriction_reason: finalReason
             },
             { onConflict: 'activity_id,date' }
           );
@@ -231,9 +306,11 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
                 {
                   activity_id: activityId,
                   date: selectedDate,
-                  progress_percent: parseFloat(percent),
-                  notes: notes || null,
+                  progress_percent: finalPercent,
+                  notes: finalNotes,
                   created_by: user?.id,
+                  has_restriction: finalRestriction,
+                  restriction_reason: finalReason
                 },
                 { onConflict: 'activity_id,date' }
               );
@@ -271,12 +348,20 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
           </button>
           <div className="flex flex-col items-center">
             <label className="text-xs font-semibold tracking-wider text-surface-200/60 uppercase mb-1">Pulso del Día</label>
-            <input 
-              type="date" 
-              value={selectedDate} 
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent border-none text-lg font-bold text-surface-100 outline-none text-center cursor-pointer"
-            />
+            <div className="flex items-center gap-2">
+              <input 
+                type="date" 
+                value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent border-none text-lg font-bold text-surface-100 outline-none text-center cursor-pointer"
+              />
+              {activeRestrictionsCount > 0 && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-danger-500/20 text-danger-400 text-xs font-bold animate-pulse">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                  {activeRestrictionsCount}
+                </div>
+              )}
+            </div>
           </div>
           <button onClick={() => changeDate(1)} className="p-2 hover:bg-surface-800 rounded-full transition-colors" title="Día siguiente">
             <svg className="w-5 h-5 text-surface-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -372,11 +457,20 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
                             ? editState.percent 
                             : (activity.existingTodayPercent !== null ? activity.existingTodayPercent.toString() : '');
 
+                          const isRestricted = editState?.hasRestriction !== undefined 
+                            ? editState.hasRestriction 
+                            : (activity.existingTodayRestriction || false);
+                            
+                          const trClass = isRestricted 
+                            ? 'bg-danger-500/5 hover:bg-danger-500/10 border-l-4 border-l-danger-500 border-b border-surface-700/50 transition-colors'
+                            : `hover:bg-surface-800/30 transition-colors border-b border-l-4 border-l-transparent border-surface-700/50 ${hasUnsavedChanges ? 'bg-accent-400/5' : ''}`;
+
                           return (
                             <React.Fragment key={activity.id}>
-                              <tr className={`hover:bg-surface-800/30 transition-colors border-b border-surface-700/50 ${hasUnsavedChanges ? 'bg-accent-400/5' : ''}`}>
-                                <td className="py-3 px-4 pl-8">
+                              <tr className={trClass}>
+                                <td className="py-3 px-4 pl-6">
                                   <div className="flex items-center gap-2">
+                                    {isRestricted && <span title="Con Restricción" className="text-danger-400"><svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" /></svg></span>}
                                     <span className="text-surface-100 font-medium">{activity.name}</span>
                                     {hasUnsavedChanges && <span className="w-1.5 h-1.5 rounded-full bg-accent-400"></span>}
                                   </div>
@@ -420,7 +514,34 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
                               {isExpanded && (
                                 <tr className="bg-surface-800/50 border-b border-surface-700/50">
                                   <td colSpan={5} className="py-4 px-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-900 p-4 rounded-xl border border-surface-700/50 shadow-inner">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-900 p-4 rounded-xl border border-surface-700/50 shadow-inner mt-4">
+                                      
+                                      {/* Restricción */}
+                                      <div className={`col-span-1 md:col-span-2 p-4 rounded-lg border ${isRestricted ? 'bg-danger-500/10 border-danger-500/30' : 'bg-surface-800 border-surface-700'}`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                          <label className="flex items-center gap-2 text-sm font-bold text-surface-100 cursor-pointer">
+                                            <input 
+                                              type="checkbox" 
+                                              checked={isRestricted}
+                                              onChange={() => handleRestrictionToggle(activity.id, isRestricted)}
+                                              className="w-4 h-4 accent-danger-500 rounded bg-surface-700 border-surface-600"
+                                            />
+                                            ¿Existe alguna restricción o inconveniente?
+                                          </label>
+                                        </div>
+                                        {isRestricted && (
+                                          <div className="pl-6 animate-fade-in">
+                                            <label className="block text-xs font-semibold text-danger-400 uppercase tracking-wider mb-2">Detalle de la Restricción</label>
+                                            <textarea
+                                              value={editState?.restrictionReason !== undefined ? editState.restrictionReason : activity.existingTodayRestrictionReason}
+                                              onChange={(e) => handleRestrictionReasonChange(activity.id, e.target.value)}
+                                              placeholder="Ej: Falta de material, clima, permisos..."
+                                              className="w-full text-sm bg-surface-900 border border-danger-500/30 rounded-lg p-3 outline-none focus:border-danger-400 text-surface-100 resize-none h-20"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+
                                       {/* Notas */}
                                       <div>
                                         <label className="block text-xs font-semibold text-surface-200 uppercase tracking-wider mb-2">Notas del día</label>
