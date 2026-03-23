@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { SCurveChart } from '@/components/charts/SCurveChart';
 import { GanttView } from '@/components/gantt/GanttView';
+import { ShareContentTabs } from '@/components/project/ShareContentTabs';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Metadata } from 'next';
@@ -142,31 +142,27 @@ export default async function SharePage({ params }: Props) {
           </div>
         </div>
 
-        <div className="space-y-10">
-          {/* Gantt View Section */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-surface-700">
-            <GanttView
-              projectId={project.id}
-              partidas={partidas || []}
-              dailyProgress={dailyProgress}
-              readonly={true}
-            />
-          </section>
-
-          {/* S-Curve Chart Section */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-surface-700">
-            <SCurveChart
-              project={project}
-              partidas={partidas || []}
-              dailyProgress={dailyProgress}
-            />
-          </section>
+        <div className="mt-8">
+          <ShareContentTabs 
+            project={project} 
+            partidas={partidas || []} 
+            dailyProgress={dailyProgress} 
+          />
         </div>
 
         {/* Footer */}
         <div className="text-center mt-10">
-          <p className="text-xs text-surface-200/30">
-            Reporte desarrollado por Kevin Avalos · Control de Proyectos
+          <p className="text-xs font-medium text-surface-200/70">
+            Reporte desarrollado por{' '}
+            <a 
+              href="https://wa.me/51975226913" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-bold text-primary-500 hover:text-primary-400 hover:underline transition-colors"
+            >
+              Kevin Avalos
+            </a>
+            {' '}· Control de Proyectos
           </p>
         </div>
       </div>
