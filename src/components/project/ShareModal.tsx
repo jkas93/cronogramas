@@ -8,9 +8,10 @@ interface ShareModalProps {
   projectId: string;
   initialToken: string | null;
   projectName: string;
+  variant?: 'button' | 'menuItem';
 }
 
-export function ShareModal({ projectId, initialToken, projectName }: ShareModalProps) {
+export function ShareModal({ projectId, initialToken, projectName, variant = 'button' }: ShareModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [token, setToken] = useState<string | null>(initialToken);
   const [loading, setLoading] = useState(false);
@@ -85,13 +86,13 @@ export function ShareModal({ projectId, initialToken, projectName }: ShareModalP
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="btn-secondary text-xs flex items-center gap-2 flex-shrink-0"
+        className={variant === 'menuItem' ? "w-full flex items-center gap-3 px-4 py-2.5 text-sm text-surface-200 hover:bg-surface-800 hover:text-surface-100 transition-colors" : "btn-secondary text-xs flex items-center gap-2 flex-shrink-0"}
         title="Gestionar el acceso público al proyecto"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <svg className="w-4 h-4 text-surface-400 group-hover:text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
         </svg>
-        Compartir
+        <span className={variant === 'menuItem' ? '' : 'hidden sm:inline'}>Compartir</span>
       </button>
 
       {isOpen && (

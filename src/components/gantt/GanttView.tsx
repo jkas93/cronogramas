@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ImportExcelButton } from './ImportExcelButton';
-import { addDays, subDays, parseISO, format } from 'date-fns';
+import { addDays, subDays, parseISO, format, isSameDay } from 'date-fns';
+import { MilestoneModal } from './MilestoneModal';
 
 interface Props {
   projectId: string;
@@ -34,11 +35,23 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
   const [selectedItem, setSelectedItem] = useState('');
   const [addingItem, setAddingItem] = useState(false);
   const [addingActivity, setAddingActivity] = useState(false);
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
   
   useEffect(() => {
     if (!containerRef.current || ganttInitialized.current) return;
 
     const initGantt = async () => {
+      // 0. Fetch Milestones & Auth
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: proj } = await supabase.from('projects').select('owner_id').eq('id', projectId).single();
+      setIsOwner(user?.id === proj?.owner_id);
+
+      const { data: msData } = await supabase.from('project_milestones').select('*').eq('project_id', projectId);
+      const currentMilestones = msData || [];
+      setMilestones(currentMilestones);
+
+      // 1. Import Gantt
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const ganttModule = await import('dhtmlx-gantt');
       const gantt: any = ganttModule.gantt || ganttModule.default || ganttModule;
@@ -80,6 +93,16 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         css: "today",
         text: "HOY",
         title: "Día actual"
+      });
+
+      // Add Project Milestones as Markers
+      currentMilestones.forEach((m: any) => {
+        gantt.addMarker({
+          start_date: parseISO(m.date),
+          css: "project-milestone",
+          text: m.name.toUpperCase(),
+          title: m.name
+        });
       });
 
       // Configure Zoom levels
@@ -370,26 +393,35 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
   return (
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-surface-50 p-2 md:p-4 flex flex-col h-screen w-screen" : "flex flex-col h-full"}>
-      <div className="flex flex-col md:flex-row md:flex-wrap items-start md:items-center gap-3 mb-4 shrink-0">
-        <h3 className="text-xs md:text-sm font-medium text-surface-200/80 items-center flex gap-2">
-          <svg className="w-5 h-5 text-accent-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Gantt Interactivo: Arrastra bordes para cambiar fechas.
-        </h3>
+      <div className="flex flex-row items-center gap-3 mb-6 shrink-0 overflow-x-auto scrollbar-hide py-1">
         
-        <div className="md:ml-auto flex flex-wrap items-center justify-end gap-1.5 w-full md:w-auto">
+        <div className="flex items-center gap-2 flex-nowrap shrink-0">
           {/* Zoom Toggle */}
-          <div className="flex bg-surface-900/50 rounded-lg p-1 border border-surface-700/50 mr-2">
-            <button onClick={() => handleZoomChange('day')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'day' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Días</button>
-            <button onClick={() => handleZoomChange('week')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'week' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Semanas</button>
-            <button onClick={() => handleZoomChange('month')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'month' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>Meses</button>
+          <div className="flex bg-surface-900/50 rounded-lg p-0.5 border border-surface-700/50 flex-shrink-0">
+            <button onClick={() => handleZoomChange('day')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'day' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>
+              <span className="hidden sm:inline">Días</span>
+              <span className="sm:hidden">D</span>
+            </button>
+            <button onClick={() => handleZoomChange('week')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'week' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>
+              <span className="hidden sm:inline">Semanas</span>
+              <span className="sm:hidden">S</span>
+            </button>
+            <button onClick={() => handleZoomChange('month')} className={`px-2 md:px-3 py-1 text-[10px] md:text-xs rounded-md transition-colors ${zoomLevel === 'month' ? 'bg-surface-700 text-surface-100' : 'text-surface-200/60 hover:text-surface-100'}`}>
+              <span className="hidden sm:inline">Meses</span>
+              <span className="sm:hidden">M</span>
+            </button>
           </div>
+
+          <div className="w-px h-6 bg-surface-700/50 mx-1 flex-shrink-0"></div>
 
           {/* Sincronizar */}
           {!readonly && (
-            <button onClick={() => router.refresh()} title="Sincroniza y descarga los últimos cambios de la base de datos a tu pantalla" className="p-2 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <button 
+              onClick={() => router.refresh()} 
+              title="Sincronizar datos" 
+              className="p-1.5 md:p-2 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors flex-shrink-0"
+            >
+              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
             </button>
@@ -406,29 +438,33 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
                    } catch(e) {}
                  }
                }}
-               className="p-2 text-surface-400 hover:text-danger-500 hover:bg-danger-500/10 rounded-lg transition-colors"
+               className="p-1.5 md:p-2 text-surface-400 hover:text-danger-500 hover:bg-danger-500/10 rounded-lg transition-colors flex-shrink-0"
                title="Resetear todo el diagrama"
              >
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+               <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                </svg>
              </button>
           )}
 
           {/* Pantalla Completa */}
-          <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 text-surface-400 hover:text-accent-400 hover:bg-accent-500/10 rounded-lg transition-colors" title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}>
-            {isFullscreen ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M15 15v4.5m0-4.5h4.5m-4.5 0l5.25 5.25M15 9V4.5m0 4.5h4.5M15 9l5.25-5.25M9 15v4.5m0-4.5H4.5m4.5 0l-5.25 5.25" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
-              </svg>
-            )}
+          <button 
+            onClick={() => setIsFullscreen(!isFullscreen)} 
+            className="p-1.5 md:p-2 text-surface-400 hover:text-accent-400 hover:bg-accent-500/10 rounded-lg transition-colors flex-shrink-0" 
+            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+          >
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={isFullscreen ? "M9 9V4.5M9 9H4.5M9 9L3.75 3.75M15 15v4.5m0-4.5h4.5m-4.5 0l5.25 5.25M15 9V4.5m0 4.5h4.5M15 9l5.25-5.25M9 15v4.5m0-4.5H4.5m4.5 0l-5.25 5.25" : "M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15"} />
+            </svg>
           </button>
           
-          <div className="w-px h-6 bg-surface-700/50 mx-1 hidden md:block"></div>
+          <div className="w-px h-6 bg-surface-700/50 mx-1 flex-shrink-0"></div>
+
+          <MilestoneModal 
+            projectId={projectId} 
+            isOwner={isOwner || !readonly} 
+            onUpdate={() => router.refresh()} 
+          />
 
           {!readonly && <ImportExcelButton projectId={projectId} />}
         </div>
@@ -481,11 +517,14 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           .gantt-dark-theme-wrapper .gantt_marker.today .gantt_marker_content {
             background: #F7C20E;
             color: #000B1C;
-            border-radius: 10px;
-            padding: 2px 6px;
+            border-radius: 6px;
+            padding: 2px 8px;
             font-size: 10px;
-            font-weight: bold;
-            transform: translateY(-50%);
+            font-weight: 800;
+            top: 62px !important; /* Debajo de la escala de tiempo */
+            transform: translateX(-50%);
+            box-shadow: 0 4px 10px rgba(247, 194, 14, 0.3);
+            z-index: 20;
           }
           .gantt-dark-theme-wrapper .gantt_scale_cell {
             color: rgba(176, 188, 206, 0.6);
@@ -507,6 +546,75 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           }
           .gantt-dark-theme-wrapper .gantt_task_line.in-progress-task {
             /* Uses default golden from globals.css */
+          }
+
+          /* Estilo P.U.L.S.O. - Hitos de Proyecto (Líneas Verticales) */
+          .gantt-dark-theme-wrapper .gantt_marker.project-milestone {
+            background: transparent;
+            width: 3px;
+            z-index: 10;
+            transition: all 0.3s ease;
+          }
+          
+          .gantt_marker.project-milestone:hover {
+            background: rgba(247, 194, 14, 0.15) !important;
+          }
+          
+          .gantt-dark-theme-wrapper .gantt_marker.project-milestone .gantt_marker_content {
+            background: #F7C20E;
+            color: #000B1C;
+            border: 1.5px solid #ffffff;
+            border-radius: 4px; /* Se verá como rombo al rotar */
+            width: 12px;
+            height: 12px;
+            top: 60px !important; /* Justo debajo del header */
+            transform: rotate(45deg) translateX(-25%);
+            box-shadow: 0 4px 10px rgba(247, 194, 14, 0.4);
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0; /* Esconde texto por defecto */
+            text-indent: -9999px;
+            z-index: 50;
+          }
+
+          .gantt-dark-theme-wrapper .gantt_marker.project-milestone:hover .gantt_marker_content {
+            transform: rotate(0deg) translateX(-50%);
+            width: fit-content;
+            height: auto;
+            min-height: 24px;
+            padding: 4px 14px;
+            font-size: 11px;
+            font-weight: 800;
+            text-indent: 0;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(247, 194, 14, 0.6);
+            letter-spacing: 0.5px;
+          }
+
+          /* Línea punteada dorada de alta visibilidad */
+          .gantt-dark-theme-wrapper .gantt_marker.project-milestone::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-image: linear-gradient(to bottom, #F7C20E 60%, transparent 60%);
+            background-size: 2px 14px;
+            background-repeat: repeat-y;
+            opacity: 0.5;
+            transition: opacity 0.3s, transform 0.3s;
+          }
+
+          .gantt-dark-theme-wrapper .gantt_marker.project-milestone:hover::after {
+            opacity: 1;
+            transform: scaleX(1.5);
+            background-image: linear-gradient(to bottom, #F7C20E 100%, #F7C20E 100%);
           }
         `}} />
         <div

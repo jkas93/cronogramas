@@ -2,10 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ProjectTabs } from '@/components/project/ProjectTabs';
-import { DeleteProjectButton } from '@/components/project/DeleteProjectButton';
-import { ShareModal } from '@/components/project/ShareModal';
-import { TeamModal } from '@/components/project/TeamModal';
-import { ReportExportButton } from '@/components/project/ReportExportButton';
+import { ProjectActionsMenu } from '@/components/project/ProjectActionsMenu';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -72,44 +69,40 @@ export default async function ProjectPage({ params }: Props) {
 
   return (
     <div className="p-4 md:p-8 max-w-full mx-auto fade-in">
-      {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-surface-200/50 mb-2">
-            <Link href="/dashboard" className="hover:text-accent-400 transition-colors">
-              Dashboard
-            </Link>
-            <span>/</span>
-            <span className="text-surface-200/80 truncate max-w-[150px] md:max-w-xs">{project.name}</span>
-          </div>
-          <h1 className="text-2xl font-bold text-surface-100">{project.name}</h1>
-          {project.description && (
-            <p className="text-sm text-surface-200/60 mt-1">{project.description}</p>
-          )}
+      {/* Header Estructurado P.U.L.S.O. */}
+      <div className="flex flex-col gap-4 mb-8">
+        
+        {/* Row 1: Breadcrumbs (Minimal) */}
+        <div className="flex items-center gap-2 text-[10px] md:text-sm text-surface-200/30 uppercase tracking-widest font-bold">
+          <Link href="/dashboard" className="hover:text-accent-400 transition-colors">
+            Dashboard
+          </Link>
+          <span className="opacity-50">/</span>
+          <span className="text-surface-200/60 truncate max-w-[150px] md:max-w-xs">{project.name}</span>
         </div>
 
-        {/* Share link / Actions */}
+        {/* Row 2: Title & Primary Actions Menu (SIEMPRE AL MISMO NIVEL) */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-surface-100 leading-tight">
+              {project.name}
+            </h1>
+            {project.description && (
+              <p className="text-sm text-surface-200/50 mt-1 max-w-2xl line-clamp-2">{project.description}</p>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 pt-0.5">
+            <ProjectActionsMenu project={project} isOwner={isOwner} />
+          </div>
+        </div>
+
+        {/* Row 3: Metrics & Timeframes (Secondary info) */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="text-[11px] md:text-xs text-surface-200/40 bg-surface-900/30 px-3 py-1.5 rounded-md border border-surface-700/30 flex-shrink-0">
-            <span className="font-medium">Período:</span>{' '}
+          <div className="text-[10px] md:text-xs text-surface-200/40 bg-surface-900/30 px-3 py-1.5 rounded-md border border-surface-700/30 flex-shrink-0">
+            <span className="font-medium mr-1 uppercase tracking-tighter opacity-70">Período:</span>{' '}
             {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} <span className="text-accent-400/70">→</span> {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
           </div>
-          
-          <DeleteProjectButton projectId={project.id} projectName={project.name} />
-          
-          <ReportExportButton projectId={project.id} />
-          
-          <TeamModal 
-            projectId={project.id} 
-            projectName={project.name} 
-            isOwner={isOwner} 
-          />
-          
-          <ShareModal 
-            projectId={project.id} 
-            initialToken={project.share_token} 
-            projectName={project.name} 
-          />
         </div>
       </div>
 
