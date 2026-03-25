@@ -9,9 +9,10 @@ interface Props {
   project: any;
   partidas: any[];
   dailyProgress: any[];
+  milestones: any[];
 }
 
-export function ShareContentTabs({ project, partidas, dailyProgress }: Props) {
+export function ShareContentTabs({ project, partidas, dailyProgress, milestones }: Props) {
   const [activeTab, setActiveTab] = useState<'gantt' | 'scurve' | 'daily'>('gantt');
 
   return (
@@ -88,6 +89,7 @@ export function ShareContentTabs({ project, partidas, dailyProgress }: Props) {
               project={project}
               partidas={partidas || []}
               dailyProgress={dailyProgress}
+              milestones={milestones}
             />
           </section>
         )}

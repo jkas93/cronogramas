@@ -13,6 +13,7 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
   const [project, setProject] = useState<any>(null);
   const [partidas, setPartidas] = useState<any[]>([]);
   const [dailyProgress, setDailyProgress] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,9 +26,13 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
       const activityIds = (pList || []).flatMap((p: any) => p.items || []).flatMap((i: any) => i.activities || []).map((a: any) => a.id);
       const { data: dpData } = await supabase.from('daily_progress').select('*').in('activity_id', activityIds).order('date');
       
+      // Fetch milestones
+      const { data: msData } = await supabase.from('project_milestones').select('*').eq('project_id', id).order('date');
+
       setProject(pData);
       setPartidas(pList || []);
       setDailyProgress(dpData || []);
+      setMilestones(msData || []);
       setLoading(false);
 
       // Trigger standard print when everything is fully loaded and drawn.
@@ -69,7 +74,12 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
          <div className="mb-12 page-break-after">
             <h2 className="text-xl font-bold border-b border-surface-200/30 pb-2 mb-4 text-primary-700">1. Analíticas Curva S (EVM)</h2>
             <div className="h-[400px] rounded-lg border border-surface-200/20 bg-surface-50 p-4 print:border-none print:shadow-none">
-              <SCurveChart project={project} partidas={partidas} dailyProgress={dailyProgress} />
+              <SCurveChart 
+                project={project} 
+                partidas={partidas} 
+                dailyProgress={dailyProgress} 
+                milestones={milestones} 
+              />
             </div>
          </div>
 

@@ -95,6 +95,13 @@ export default async function SharePage({ params }: Props) {
     dailyProgress = data || [];
   }
 
+  // Fetch milestones
+  const { data: milestones } = await supabase
+    .from('project_milestones')
+    .select('*')
+    .eq('project_id', project.id)
+    .order('date');
+
   // Detect RLS Block issue: If the exact same project exists but data lengths are zero and perhaps error is empty, 
   // It's a silent RLS row level security drop.
   const isRLSBlocked = !partidasError && partidas?.length === 0;
@@ -147,6 +154,7 @@ export default async function SharePage({ params }: Props) {
             project={project} 
             partidas={partidas || []} 
             dailyProgress={dailyProgress} 
+            milestones={milestones || []}
           />
         </div>
 
