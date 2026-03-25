@@ -496,11 +496,13 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
           <div className="w-px h-6 bg-surface-700/50 mx-1 flex-shrink-0"></div>
 
-          <MilestoneModal
-            projectId={projectId}
-            isOwner={isOwner || !readonly}
-            onUpdate={() => router.refresh()}
-          />
+          {!readonly && (
+            <MilestoneModal
+              projectId={projectId}
+              isOwner={isOwner}
+              onUpdate={() => router.refresh()}
+            />
+          )}
 
           {!readonly && <ImportExcelButton projectId={projectId} />}
         </div>
