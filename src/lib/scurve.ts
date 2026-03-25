@@ -16,38 +16,63 @@ import type { Activity, DailyProgress, SCurvePoint, SCurveData } from './types';
 // =============================================================
 
 /**
+ * Helper to check if a day is a working day based on a schedule.
+ * @param date - Date to check
+ * @param workingDays - Array of day indices (0=Sun, 1=Mon, ..., 6=Sat)
+ */
+function isWorkingDay(date: Date, workingDays: number[] = [1, 2, 3, 4, 5, 6]): boolean {
+  return workingDays.includes(date.getDay());
+}
+
+/**
+ * Counts the number of working days in a date range efficiently.
+ * Optimized to avoid creating temporary date arrays for every activity.
+ * 
+ * @param start - Start date of the range
+ * @param end - End date of the range
+ * @param workingDays - Days of the week that are laborable (0=Sun, 1=Mon, ..., 6=Sat)
+ */
+function countWorkingDays(start: Date, end: Date, workingDays: number[] = [1, 2, 3, 4, 5, 6]): number {
+  let count = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    if (workingDays.includes(current.getDay())) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
+}
+
+/**
  * Calculates the planned daily contribution of an activity.
- * Uses linear distribution: the activity's weight is distributed
- * evenly across all days in its date range.
- *
+ * Uses linear distribution ONLY across working days (defined as Mon-Sat by default).
+ * 
  * @param activity - The activity with start_date, end_date, and weight
- * @returns weight per day
+ * @returns units of weight that represent one working day of progress
  */
 function getPlannedDailyWeight(activity: Activity): number {
   const start = parseISO(activity.start_date);
   const end = parseISO(activity.end_date);
-  const durationDays = differenceInDays(end, start) + 1; // inclusive
-  return activity.weight / Math.max(durationDays, 1);
+  const workingDaysCount = countWorkingDays(start, end);
+  return activity.weight / Math.max(workingDaysCount, 1);
 }
 
 /**
- * Calculates the S-Curve data points (Planned and Actual) for a project.
+ * Calculates the S-Curve data points (Planned and Actual) for a project following
+ * the Earned Value Management (EVM) principles and P.U.L.S.O. methodology.
  *
  * PLANNED CURVE:
- * For each day in the project timeline, we accumulate the daily weight
- * of each activity whose date range covers that day. The cumulative
- * sum is normalized to 0–100%.
- *
+ * Accumulates daily weight targets based on activity schedules and working calendars.
+ * 
  * ACTUAL CURVE:
- * For each day, we sum the weighted daily progress entries. Each entry's
- * contribution = (progress_percent / 100) * activity_weight, distributed
- * at the date the progress was recorded. The cumulative sum is normalized.
+ * Accumulates actual progress reported as percentages of activity weight. 
+ * Includes "Plateau" logic to show gaps in work or delays.
  *
  * @param projectStartDate - Project start date (ISO string)
  * @param projectEndDate - Project end date (ISO string)
  * @param activities - All activities in the project
  * @param dailyProgress - All daily progress entries for those activities
- * @returns SCurveData with points and summary metrics
  */
 export function calculateSCurve(
   projectStartDate: string,
@@ -57,11 +82,7 @@ export function calculateSCurve(
 ): SCurveData {
   if (activities.length === 0) {
     return {
-      points: [],
-      totalWeight: 0,
-      currentPlanned: 0,
-      currentActual: 0,
-      spiIndex: 1,
+      points: [], totalWeight: 0, currentPlanned: 0, currentActual: 0, spiIndex: 1, latestProgressDate: null
     };
   }
 
@@ -87,19 +108,13 @@ export function calculateSCurve(
   if (totalWeight === 0) {
     return {
       points: allDays.map((d) => ({
-        date: format(d, 'yyyy-MM-dd'),
-        planned: 0,
-        actual: 0,
-        deviation: 0,
+        date: format(d, 'yyyy-MM-dd'), planned: 0, actual: 0, deviation: 0
       })),
-      totalWeight: 0,
-      currentPlanned: 0,
-      currentActual: 0,
-      spiIndex: 1,
+      totalWeight: 0, currentPlanned: 0, currentActual: 0, spiIndex: 1, latestProgressDate: null
     };
   }
 
-  // Build a map of activity_id → DailyProgress[]
+  // Pre-calculate daily progress mapping for efficiency O(N)
   const progressByActivity = new Map<string, DailyProgress[]>();
   for (const dp of dailyProgress) {
     const existing = progressByActivity.get(dp.activity_id) || [];
@@ -107,24 +122,29 @@ export function calculateSCurve(
     progressByActivity.set(dp.activity_id, existing);
   }
 
-  // Pre-compute the daily planned weight for each activity
+  // Pre-compute activity weights and date ranges for loop optimization O(A)
   const activityDailyWeights = activities.map((a) => ({
-    activity: a,
     dailyWeight: getPlannedDailyWeight(a),
     start: parseISO(a.start_date),
     end: parseISO(a.end_date),
+    id: a.id,
+    weight: Number(a.weight)
   }));
 
-  // Build a map of date → actual weight gained that day
+  // Map of activity gains per date O(P)
   const actualDailyGain = new Map<string, number>();
-  for (const activity of activities) {
+  for (const activity of activityDailyWeights) {
     const progEntries = progressByActivity.get(activity.id) || [];
     for (const entry of progEntries) {
-      const dateKey = entry.date;
-      const gain = (Number(entry.progress_percent) / 100) * Number(activity.weight);
-      actualDailyGain.set(dateKey, (actualDailyGain.get(dateKey) || 0) + gain);
+      const gain = (Number(entry.progress_percent) / 100) * activity.weight;
+      actualDailyGain.set(entry.date, (actualDailyGain.get(entry.date) || 0) + gain);
     }
   }
+
+  // Find the latest date of progress entries to stop the actual curve at that date
+  const latestProgressDate = dailyProgress.length > 0
+    ? maxDate(dailyProgress.map((dp) => parseISO(dp.date)))
+    : null;
 
   // Calculate cumulative curves
   let cumulativePlanned = 0;
@@ -135,27 +155,30 @@ export function calculateSCurve(
   let currentPlanned = 0;
   let currentActual = 0;
 
+  let canContinueActual = true;
   const points: SCurvePoint[] = allDays.map((day) => {
     const dayStr = format(day, 'yyyy-MM-dd');
 
-    // Planned: sum daily weights for activities active on this day
+    // Planned: sum daily weights for activities active on this day ONLY if it's a working day
     let plannedGain = 0;
-    for (const { dailyWeight, start, end } of activityDailyWeights) {
-      if (
-        (isAfter(day, start) || isEqual(day, start)) &&
-        (isBefore(day, end) || isEqual(day, end))
-      ) {
-        plannedGain += dailyWeight;
+    if (isWorkingDay(day)) {
+      for (const { dailyWeight, start, end } of activityDailyWeights) {
+        if (
+          (isAfter(day, start) || isEqual(day, start)) &&
+          (isBefore(day, end) || isEqual(day, end))
+        ) {
+          plannedGain += dailyWeight;
+        }
       }
     }
     cumulativePlanned += plannedGain;
 
-    // Actual: sum recorded progress for this day
+    // Actual: sum recorded progress for this day (Actual can happen on any day)
     const actualGain = actualDailyGain.get(dayStr) || 0;
     cumulativeActual += actualGain;
 
-    // Normalize to percentage
-    const plannedPct = (cumulativePlanned / totalWeight) * 100;
+    // Normalize to percentage (Planned cap at 100)
+    const plannedPct = Math.min((cumulativePlanned / totalWeight) * 100, 100);
     const actualPct = (cumulativeActual / totalWeight) * 100;
 
     // Track current day values
@@ -164,12 +187,29 @@ export function calculateSCurve(
       currentActual = actualPct;
     }
 
+    // Show actual curve logic:
+    // 1. Always show if it's before or on the latest record.
+    // 2. If after last record: 
+    //    - If there was NOTHING planned for this day, allow it to plateau (continue showing).
+    //    - If there WAS something planned but no progress, stop the curve (it's a delay).
+    let shouldShowActual = false;
+    if (latestProgressDate && (isBefore(day, latestProgressDate) || isEqual(day, latestProgressDate))) {
+      shouldShowActual = true;
+    } else if (canContinueActual && (isBefore(day, today) || isEqual(day, today))) {
+      if (plannedGain === 0) {
+        shouldShowActual = true;
+      } else {
+        canContinueActual = false;
+        shouldShowActual = false;
+      }
+    }
+
     return {
       date: dayStr,
       planned: Math.round(plannedPct * 100) / 100,
-      actual: Math.round(actualPct * 100) / 100,
+      actual: shouldShowActual ? Math.round(actualPct * 100) / 100 : undefined,
       deviation: Math.round((actualPct - plannedPct) * 100) / 100,
-    };
+    } as SCurvePoint;
   });
 
   // Schedule Performance Index (SPI = Actual / Planned)
@@ -181,6 +221,7 @@ export function calculateSCurve(
     currentPlanned: Math.round(currentPlanned * 100) / 100,
     currentActual: Math.round(currentActual * 100) / 100,
     spiIndex: Math.round(spiIndex * 100) / 100,
+    latestProgressDate: latestProgressDate ? format(latestProgressDate, 'yyyy-MM-dd') : null,
   };
 }
 

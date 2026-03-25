@@ -107,7 +107,7 @@ export interface ProjectWithDetails extends Project {
 export interface SCurvePoint {
   date: string;
   planned: number;     // Cumulative planned progress 0–100
-  actual: number;      // Cumulative actual progress 0–100
+  actual?: number;      // Cumulative actual progress 0–100
   deviation: number;   // Difference (actual - planned)
 }
 
@@ -117,6 +117,7 @@ export interface SCurveData {
   currentPlanned: number;
   currentActual: number;
   spiIndex: number;    // Schedule Performance Index
+  latestProgressDate?: string | null;
 }
 
 // =============================================================

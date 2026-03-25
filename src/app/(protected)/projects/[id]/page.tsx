@@ -16,35 +16,30 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch project with all nested data
-  const { data: project, error } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .single();
+  // Fetch project, partidas, alerts and milestones in parallel
+  const [projectRes, partidasRes, alertsRes, milestonesRes] = await Promise.all([
+    supabase.from('projects').select('*').eq('id', id).single(),
+    supabase.from('partidas').select('*, items (*, activities (*))').eq('project_id', id).order('sort_order'),
+    supabase.from('alerts').select('*').eq('project_id', id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('project_milestones').select('*').eq('project_id', id).order('date')
+  ]);
 
-  if (error || !project) {
+  const project = projectRes.data;
+  const projectError = projectRes.error;
+
+  if (projectError || !project) {
     notFound();
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   const isOwner = user?.id === project.owner_id;
 
-  // Fetch partidas with items and activities
-  const { data: partidas } = await supabase
-    .from('partidas')
-    .select(`
-      *,
-      items (
-        *,
-        activities (*)
-      )
-    `)
-    .eq('project_id', id)
-    .order('sort_order');
+  const partidas = partidasRes.data || [];
+  const alerts = alertsRes.data || [];
+  const milestones = milestonesRes.data || [];
 
-  // Fetch all daily progress for this project's activities
-  const activityIds = (partidas || [])
+  // Fetch all daily progress for this project's activities (after we have activity ids)
+  const activityIds = partidas
     .flatMap((p: any) => p.items || [])
     .flatMap((i: any) => i.activities || [])
     .map((a: any) => a.id);
@@ -58,14 +53,6 @@ export default async function ProjectPage({ params }: Props) {
       .order('date');
     dailyProgress = data || [];
   }
-
-  // Fetch alerts
-  const { data: alerts } = await supabase
-    .from('alerts')
-    .select('*')
-    .eq('project_id', id)
-    .order('created_at', { ascending: false })
-    .limit(20);
 
   return (
     <div className="p-3 md:p-6 max-w-full mx-auto fade-in">
@@ -112,6 +99,7 @@ export default async function ProjectPage({ params }: Props) {
         partidas={partidas || []}
         dailyProgress={dailyProgress}
         alerts={alerts || []}
+        milestones={milestones || []}
       />
     </div>
   );

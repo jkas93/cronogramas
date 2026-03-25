@@ -23,13 +23,14 @@ interface Props {
   project: Project;
   partidas: any[];
   dailyProgress: any[];
+  milestones: any[];
 }
 
 /**
  * SCurveChart — Renders the Planned vs. Actual S-Curve using Recharts.
- * Includes SPI indicator and summary metrics.
+ * Includes SPI indicator, summary metrics, and PROJECT MILESTONES.
  */
-export function SCurveChart({ project, partidas, dailyProgress }: Props) {
+export function SCurveChart({ project, partidas, dailyProgress, milestones }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Flatten activities from nested partidas
@@ -69,8 +70,14 @@ export function SCurveChart({ project, partidas, dailyProgress }: Props) {
     );
   }
 
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const todayPoint = scurveData.points.find((p: any) => p.date === todayStr);
+  const { todayStr, milestoneDates } = useMemo(() => ({
+    todayStr: format(new Date(), 'yyyy-MM-dd'),
+    milestoneDates: milestones.map(m => m.date)
+  }), [milestones]);
+
+  const todayPoint = useMemo(() => 
+    scurveData.points.find((p: any) => p.date === todayStr),
+  [scurveData.points, todayStr]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -112,9 +119,17 @@ export function SCurveChart({ project, partidas, dailyProgress }: Props) {
   };
 
   // Sample data points for readability (every 7 days for long projects)
-  const sampledPoints = scurveData.points.length > 60
-    ? scurveData.points.filter((_: any, i: number, arr: any[]) => i % 7 === 0 || i === arr.length - 1 || arr[i].date === todayStr)
-    : scurveData.points;
+  const sampledPoints = useMemo(() => {
+    return scurveData.points.length > 60
+      ? scurveData.points.filter((p: any, i: number, arr: any[]) => 
+          i % 7 === 0 || 
+          i === arr.length - 1 || 
+          p.date === todayStr || 
+          p.date === scurveData.latestProgressDate ||
+          milestoneDates.includes(p.date)
+        )
+      : scurveData.points;
+  }, [scurveData.points, scurveData.latestProgressDate, todayStr, milestoneDates]);
 
   // Determine SPI color
   const spiColor = scurveData.spiIndex >= 0.95
@@ -233,7 +248,7 @@ export function SCurveChart({ project, partidas, dailyProgress }: Props) {
                 x={todayStr}
                 stroke="#f43f5e"
                 strokeDasharray="3 3"
-                label={{ position: 'top', value: 'HOY', fill: '#f43f5e', fontSize: 10 }}
+                label={{ position: 'insideTop', value: 'HOY', fill: '#f43f5e', fontSize: 10, dy: 15 }}
               />
             )}
             {todayPoint && (
@@ -245,6 +260,26 @@ export function SCurveChart({ project, partidas, dailyProgress }: Props) {
                 stroke="none"
               />
             )}
+
+            {/* Project Milestones */}
+            {milestones.map((m) => (
+              <ReferenceLine
+                key={m.id}
+                x={m.date}
+                stroke="rgba(247, 194, 14, 0.4)"
+                strokeDasharray="4 4"
+                label={{ 
+                  position: 'insideBottomLeft', 
+                  value: m.name.toUpperCase(), 
+                  fill: 'rgba(247, 194, 14, 0.6)', 
+                  fontSize: 9,
+                  fontWeight: '800',
+                  angle: -90,
+                  dx: 12,
+                  dy: -20
+                }}
+              />
+            ))}
             <Area
               type="monotone"
               dataKey="planned"
