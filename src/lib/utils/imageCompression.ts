@@ -1,6 +1,6 @@
 /**
- * imageCompression.ts
- * Utilidad P.U.L.S.O. para optimizar imágenes en el cliente antes de la subida a Supabase.
+ * imageCompression.ts v1.1
+ * Motor de compresión P.U.L.S.O. - Optimización de imágenes inteligente.
  * Reduce el peso hasta un 95% convirtiendo a WebP y limitando la resolución.
  */
 
