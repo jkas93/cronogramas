@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Pro: Compresión P.U.L.S.O.</title>
+    <style>
+        :root { --p-primary: #facc15; --p-bg: #0f172a; --p-card: #1e293b; --p-border: #334155; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--p-bg); color: #f8fafc; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 900px; width: 100%; border-radius: 24px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        h1 { font-size: 32px; color: var(--p-primary); margin: 0; font-weight: 900; letter-spacing: -1px; }
+        .badge { background: rgba(250, 204, 21, 0.1); color: var(--p-primary); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-top: 8px; display: inline-block; }
+        
+        .controls-card { background: var(--p-card); border: 1px solid var(--p-border); border-radius: 20px; padding: 32px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+        .upload-zone { border: 2px dashed #475569; border-radius: 16px; padding: 32px; cursor: pointer; transition: 0.3s; position: relative; }
+        .upload-zone:hover { border-color: var(--p-primary); background: rgba(250, 204, 21, 0.05); }
+        input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        
+        .settings { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; }
+        label { display: block; font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        select, input[type="range"] { width: 100%; background: var(--p-bg); border: 1px solid var(--p-border); color: white; padding: 10px; border-radius: 8px; }
+        
+        .comparison { display: grid; grid-template-cols: 1fr 1fr; gap: 24px; margin-top: 32px; display: none; }
+        .img-box { background: var(--p-card); border: 1px solid var(--p-border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+        .img-label { padding: 12px; background: rgba(0,0,0,0.3); font-size: 11px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+        .img-preview { width: 100%; height: 300px; object-fit: contain; background: #000; }
+        
+        .stats-banner { background: #4ade80; color: #064e3b; padding: 16px; border-radius: 12px; margin-bottom: 32px; display: none; text-align: center; font-weight: 900; font-size: 16px; }
+        .btn-download { background: #4ade80; color: #064e3b; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-download:hover { background: #22c55e; transform: scale(1.05); }
+        .loading { display: none; color: var(--p-primary); animation: blink 1s infinite; font-weight: 900; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Laboratorio Pro P.U.L.S.O.</h1>
+            <div class="badge">Optimización de Activos v2.0</div>
+        </div>
+
+        <div class="controls-card">
+            <div class="settings">
+                <div>
+                    <label>Formato de Salida</label>
+                    <select id="format">
+                        <option value="image/jpeg">JPEG (Universal)</option>
+                        <option value="image/webp">WebP (Máxima Eficiencia)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Calidad (0.1 - 1.0)</label>
+                    <input type="range" id="quality" min="0.1" max="1" step="0.1" value="0.7">
+                </div>
+            </div>
+
+            <div class="upload-zone" id="dropzone">
+                <span style="font-size: 40px; display: block; margin-bottom: 12px;">📤</span>
+                <strong>Subir fotografía original</strong>
+                <p style="margin: 8px 0 0; color: #94a3b8; font-size: 13px;">Soporta JPG, PNG, WebP y HEIC</p>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            
+            <div id="loading" class="loading" style="text-align: center;">PROCESANDO CON CANVAS MOTOR...</div>
+        </div>
+
+        <div id="statsBanner" class="stats-banner"></div>
+
+        <div id="comparison" class="comparison">
+            <div class="img-box">
+                <div class="img-label"><span>ORIGINAL</span> <span id="origInfo">0 MB</span></div>
+                <img id="origPreview" class="img-preview">
+            </div>
+            <div class="img-box">
+                <div class="img-label"><span>OPTIMIZADA</span> <span id="compInfo">0 KB</span></div>
+                <img id="compPreview" class="img-preview">
+                <div style="padding: 16px; text-align: center; border-top: 1px solid var(--p-border);">
+                    <a id="downloadBtn" class="btn-download" download="optimizado.jpg">Descargar Resultado</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('imageInput');
+        const quality = document.getElementById('quality');
+        const format = document.getElementById('format');
+        const comparison = document.getElementById('comparison');
+        const loading = document.getElementById('loading');
+        const statsBanner = document.getElementById('statsBanner');
+
+        let lastFile = null;
+
+        const process = async () => {
+            const file = lastFile || input.files[0];
+            if (!file) return;
+            lastFile = file;
+
+            loading.style.display = 'block';
+            comparison.style.display = 'none';
+            statsBanner.style.display = 'none';
+
+            try {
+                // Vista previa original
+                document.getElementById('origPreview').src = URL.createObjectURL(file);
+                document.getElementById('origInfo').innerText = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+                // Motor de compresión
+                const compressed = await compressImage(file, parseFloat(quality.value), format.value);
+                
+                // Resultados
+                document.getElementById('compPreview').src = URL.createObjectURL(compressed);
+                document.getElementById('compInfo').innerText = (compressed.size / 1024).toFixed(0) + ' KB';
+                
+                const savings = 100 - (compressed.size / file.size * 100);
+                statsBanner.innerText = `AHORRO DE ALMACENAMIENTO: ${savings.toFixed(1)}%`;
+                statsBanner.style.display = 'block';
+                
+                const dBtn = document.getElementById('downloadBtn');
+                dBtn.href = URL.createObjectURL(compressed);
+                dBtn.download = `opt-${file.name.split('.')[0]}.${format.value.split('/')[1]}`;
+
+                comparison.style.display = 'grid';
+            } catch (err) {
+                console.error(err);
+                alert("Error: " + err.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        input.onchange = process;
+        quality.onchange = process;
+        format.onchange = process;
+
+        async function compressImage(file, qualityValue, formatType) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width;
+                        let h = img.height;
+                        const MAX = 1200;
+
+                        if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+                        else if (h > w && h > MAX) { w *= MAX / h; h = MAX; }
+
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Configuración pro para nitidez
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        canvas.toBlob((blob) => {
+                            if (!blob) reject("Error Blob");
+                            resolve(new File([blob], file.name, { type: formatType }));
+                        }, formatType, qualityValue);
+                    };
+                };
+            });
+        }
+    </script>
+</body>
+</html>

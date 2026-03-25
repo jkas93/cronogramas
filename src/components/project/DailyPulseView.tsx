@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { triggerProjectAlerts } from '@/app/actions/alerts';
+import { compressImage } from '@/lib/utils/imageCompression';
 
 interface Props {
   projectId: string;
@@ -268,11 +269,13 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
         const finalReason = restrictionReason !== '' && restrictionReason !== undefined ? restrictionReason : activityInfo?.existingTodayRestrictionReason || null;
 
         for (const file of files || []) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${projectId}/${activityId}/${selectedDate}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          // Motor P.U.L.S.O. - Compresión inteligente a WebP antes de subir
+          const compressedFile = await compressImage(file);
+          
+          const fileName = `${projectId}/${activityId}/${selectedDate}_${Math.random().toString(36).substring(7)}.webp`;
           const { error: uploadError, data } = await supabase.storage
             .from('evidence')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile);
 
           if (!uploadError && data?.path) {
             const { data: publicUrlData } = supabase.storage.from('evidence').getPublicUrl(data.path);
