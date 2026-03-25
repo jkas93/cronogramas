@@ -109,13 +109,13 @@ export function MilestoneModal({ projectId, isOwner, onUpdate }: MilestoneModalP
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="btn-secondary text-xs flex items-center gap-2 flex-shrink-0"
+        className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 border-accent-400/40 text-accent-600 bg-accent-400/10 hover:bg-accent-400 hover:text-primary-900 transition-all font-semibold whitespace-nowrap"
         title="Gestionar Hitos"
       >
-        <svg className="w-4 h-4 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <svg className="w-4 h-4 text-inherit" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 12L12 22L22 12L12 2Z" />
         </svg>
-        <span className="hidden sm:inline">Hitos</span>
+        <span className="hidden md:inline">Hitos</span>
       </button>
 
       {isOpen && (

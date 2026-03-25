@@ -48,7 +48,7 @@ export function ImportExcelButton({ projectId }: Props) {
 
       let currentPartidaId: string | null = null;
       let currentItemId: string | null = null;
-      
+
       let partidaSortOrder = 0;
       let itemSortOrder = 0;
       let activitySortOrder = 0;
@@ -69,7 +69,7 @@ export function ImportExcelButton({ projectId }: Props) {
             .insert({ project_id: projectId, name: nombre, sort_order: partidaSortOrder++ })
             .select()
             .single();
-          
+
           if (pError) throw pError;
           currentPartidaId = pData.id;
           currentItemId = null; // reset item for new partida
@@ -90,7 +90,7 @@ export function ImportExcelButton({ projectId }: Props) {
             .insert({ partida_id: currentPartidaId, name: nombre, sort_order: itemSortOrder++ })
             .select()
             .single();
-            
+
           if (iError) throw iError;
           currentItemId = iData.id;
           activitySortOrder = 0;
@@ -116,15 +116,15 @@ export function ImportExcelButton({ projectId }: Props) {
           // Format dates (handle excel raw number dates if necessary, or just expect 'YYYY-MM-DD')
           let startDate = inicio || new Date().toISOString().split('T')[0];
           let endDate = fin || new Date().toISOString().split('T')[0];
-          
+
           // Basic check for Excel serial date numbers
           if (!isNaN(Number(startDate)) && String(startDate).indexOf('-') === -1) {
-             const dateObj = new Date((Number(startDate) - (25567 + 2)) * 86400 * 1000);
-             startDate = dateObj.toISOString().split('T')[0];
+            const dateObj = new Date((Number(startDate) - (25567 + 2)) * 86400 * 1000);
+            startDate = dateObj.toISOString().split('T')[0];
           }
           if (!isNaN(Number(endDate)) && String(endDate).indexOf('-') === -1) {
-             const dateObj = new Date((Number(endDate) - (25567 + 2)) * 86400 * 1000);
-             endDate = dateObj.toISOString().split('T')[0];
+            const dateObj = new Date((Number(endDate) - (25567 + 2)) * 86400 * 1000);
+            endDate = dateObj.toISOString().split('T')[0];
           }
 
           const { error: aError } = await supabase
@@ -137,7 +137,7 @@ export function ImportExcelButton({ projectId }: Props) {
               weight: peso,
               sort_order: activitySortOrder++
             });
-            
+
           if (aError) throw aError;
         }
       }
@@ -153,30 +153,30 @@ export function ImportExcelButton({ projectId }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-1.5">
-      <button 
-        onClick={handleDownloadTemplate} 
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleDownloadTemplate}
         disabled={loading}
-        className="btn-secondary text-xs px-2 py-1.5 flex items-center gap-1.5 opacity-70 hover:opacity-100"
+        className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 border-accent-400/40 text-accent-600 bg-accent-400/10 hover:bg-accent-400 hover:text-primary-900 transition-all font-semibold whitespace-nowrap"
         title="Descargar Plantilla Excel"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
         </svg>
         <span className="hidden md:inline">Plantilla</span>
       </button>
 
-      <label className={`btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`} title="Importar Excel">
+      <label className={`btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`} title="Importar">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
         </svg>
-        <span className="hidden sm:inline">{loading ? 'Importando...' : 'Importar Excel'}</span>
-        <input 
+        <span className="hidden sm:inline">{loading ? 'Importando...' : 'Importar'}</span>
+        <input
           ref={fileInputRef}
-          type="file" 
-          accept=".xlsx, .xls, .csv" 
-          className="hidden" 
-          onChange={processFile} 
+          type="file"
+          accept=".xlsx, .xls, .csv"
+          className="hidden"
+          onChange={processFile}
         />
       </label>
       {error && <span className="absolute mt-10 right-0 text-danger-400 text-[10px] truncate max-w-[200px]" title={error}>{error}</span>}

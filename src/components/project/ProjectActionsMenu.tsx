@@ -30,15 +30,15 @@ export function ProjectActionsMenu({ project, isOwner }: ProjectActionsMenuProps
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 rounded-full transition-all flex items-center justify-center border ${
+        className={`p-1 transition-all flex items-center justify-center ${
           isOpen 
-            ? 'bg-surface-800 border-surface-600 text-surface-100 shadow-lg' 
-            : 'bg-surface-900/50 border-surface-800 text-surface-400 hover:text-surface-100 hover:border-surface-700'
+            ? 'text-accent-400 scale-110' 
+            : 'text-surface-200/40 hover:text-surface-100 hover:scale-110'
         }`}
         title="Opciones del Proyecto"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
         </svg>
       </button>
 

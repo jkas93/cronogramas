@@ -68,10 +68,10 @@ export default async function ProjectPage({ params }: Props) {
     .limit(20);
 
   return (
-    <div className="p-4 md:p-8 max-w-full mx-auto fade-in">
+    <div className="p-3 md:p-6 max-w-full mx-auto fade-in">
       {/* Header Estructurado P.U.L.S.O. */}
-      <div className="flex flex-col gap-4 mb-8">
-        
+      <div className="flex flex-col gap-2 mb-4">
+
         {/* Row 1: Breadcrumbs (Minimal) */}
         <div className="flex items-center gap-2 text-[10px] md:text-sm text-surface-200/30 uppercase tracking-widest font-bold">
           <Link href="/dashboard" className="hover:text-accent-400 transition-colors">
@@ -84,11 +84,11 @@ export default async function ProjectPage({ params }: Props) {
         {/* Row 2: Title & Primary Actions Menu (SIEMPRE AL MISMO NIVEL) */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-surface-100 leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-surface-100 leading-tight">
               {project.name}
             </h1>
             {project.description && (
-              <p className="text-sm text-surface-200/50 mt-1 max-w-2xl line-clamp-2">{project.description}</p>
+              <p className="text-xs text-surface-200/50 mt-0.5 max-w-2xl line-clamp-1">{project.description}</p>
             )}
           </div>
 
@@ -98,10 +98,10 @@ export default async function ProjectPage({ params }: Props) {
         </div>
 
         {/* Row 3: Metrics & Timeframes (Secondary info) */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="text-[10px] md:text-xs text-surface-200/40 bg-surface-900/30 px-3 py-1.5 rounded-md border border-surface-700/30 flex-shrink-0">
-            <span className="font-medium mr-1 uppercase tracking-tighter opacity-70">Período:</span>{' '}
-            {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} <span className="text-accent-400/70">→</span> {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-[10px] md:text-xs text-surface-200 bg-white border border-surface-700/50 px-3 py-1.5 rounded-lg flex-shrink-0 shadow-sm font-medium">
+            <span className="font-bold mr-1 uppercase tracking-wider text-surface-400">Periodo:</span>{' '}
+            {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} <span className="text-accent-500 font-bold mx-1">→</span> {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
           </div>
         </div>
       </div>
