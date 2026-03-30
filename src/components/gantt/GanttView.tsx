@@ -4,13 +4,27 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ImportExcelButton } from './ImportExcelButton';
-import { addDays, subDays, parseISO, format, isSameDay } from 'date-fns';
+import { addDays, subDays, parseISO, format } from 'date-fns';
 import { MilestoneModal } from './MilestoneModal';
+import { PartidaWithItems, DailyProgress as DB_DailyProgress } from '@/lib/types';
+
+
+
+interface EditModalState {
+  open: boolean;
+  taskId: string;
+  dbType: 'partida' | 'item' | 'activity' | null;
+  name: string;
+  startDate: string;
+  endDate: string;
+  weight: string;
+  saving: boolean;
+}
 
 interface Props {
   projectId: string;
-  partidas: any[];
-  dailyProgress?: any[];
+  partidas: PartidaWithItems[];
+  dailyProgress?: DB_DailyProgress[];
   readonly?: boolean;
 }
 
@@ -25,18 +39,21 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
   const supabase = createClient();
   const [zoomLevel, setZoomLevel] = useState('day');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [newActivityData, setNewActivityData] = useState({
-    name: '',
-    start_date: '',
-    end_date: '',
-    weight: '1',
-  });
-  const [selectedPartida, setSelectedPartida] = useState('');
-  const [selectedItem, setSelectedItem] = useState('');
-  const [addingItem, setAddingItem] = useState(false);
-  const [addingActivity, setAddingActivity] = useState(false);
-  const [milestones, setMilestones] = useState<any[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+
+  // Custom edit modal state
+  const [editModal, setEditModal] = useState<EditModalState>({
+    open: false,
+    taskId: '',
+    dbType: null,
+    name: '',
+    startDate: '',
+    endDate: '',
+    weight: '1',
+    saving: false,
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ganttRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current || ganttInitialized.current) return;
@@ -49,13 +66,12 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
       const { data: msData } = await supabase.from('project_milestones').select('*').eq('project_id', projectId);
       const currentMilestones = msData || [];
-      setMilestones(currentMilestones);
 
       // 1. Import Gantt
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const ganttModule = await import('dhtmlx-gantt');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const gantt: any = ganttModule.gantt || ganttModule.default || ganttModule;
-      // @ts-ignore - CSS modules don't have types but we need the styles for the visual grid
+      // @ts-expect-error - CSS modules don't have types but we need the styles for the visual grid
       await import('dhtmlx-gantt/codebase/dhtmlxgantt.css');
 
       ganttInitialized.current = true;
@@ -104,7 +120,8 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       // Tareas parent no pueden cerrarse si queremos que se parezca 100%, pero sí lo dejamos
 
       // Template for task rows in the grid
-      gantt.templates.task_class = function (start: any, end: any, task: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      gantt.templates.task_class = function (start: Date, end: Date, task: any) {
         if (task.progress >= 1) return 'completed-task';
         return 'in-progress-task';
       };
@@ -118,6 +135,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       });
 
       // Add Project Milestones as Markers
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentMilestones.forEach((m: any) => {
         gantt.addMarker({
           start_date: parseISO(m.date),
@@ -179,6 +197,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       gantt.ext.zoom.setLevel(zoomLevel);
 
       // Add custom class for parent elements to make them thin & distinct
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gantt.templates.task_class = (start: Date, end: Date, task: any) => {
         if (task.db_type === 'partida') return 'is-partida-bar';
         if (task.db_type === 'item') return 'is-item-bar';
@@ -194,6 +213,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           label: 'ACTIVIDAD / DESCRIPCIÓN',
           tree: true,
           width: '*',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           template: (task: any) => {
             const prog = Math.round((task.progress || 0) * 100);
             const dur = task.duration || 0;
@@ -201,24 +221,22 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
             const titleColor = task.db_type === 'partida' ? 'color: #334155; font-weight: bold;' : (task.db_type === 'item' ? 'color: #475569; font-weight: 600;' : 'color: #60a5fa; font-weight: 500;');
             const weightBadge = task.weight ? `<span style="margin-left:6px;padding:1px 5px;font-size:9px;background:rgba(247,194,14,0.15);color:#F7C20E;border-radius:4px;border:1px solid rgba(247,194,14,0.2);">Peso: ${task.weight}</span>` : '';
 
-            // Iconos CRUD en SVG
-            const addIcon = `<svg style="width:14px;height:14px;color:#94a3b8;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>`;
-            const editIcon = `<div style="background:#1e293b;border-radius:50%;padding:4px;"><svg style="width:12px;height:12px;color:#f8fafc;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></div>`;
-            const trashIcon = `<svg style="width:14px;height:14px;color:#94a3b8;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
-            const pulseIcon = `<svg style="width:16px;height:16px;color:#94a3b8;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>`;
+            // Iconos CRUD en SVG — solo Add, Edit, Delete
+            const addIcon = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>`;
+            const editIcon = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>`;
+            const trashIcon = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
 
             return `
               <div class="gantt-custom-cell" style="display:flex;align-items:center;justify-content:space-between;line-height:1.3;width:100%;height:100%;padding-right:12px;">
-                <div style="display:flex;flex-direction:column;max-width:${readonly ? '100%' : '70%'};overflow:hidden;">
+                <div style="display:flex;flex-direction:column;max-width:${readonly ? '100%' : '72%'};overflow:hidden;">
                   <span style="${titleColor} overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;" title="${task.text}">${task.text} ${weightBadge}</span>
                   <span style="font-size:10px;color:rgba(100,116,139,0.7);margin-top:2px;">${prog}% | ${dur}d</span>
                 </div>
                 ${!readonly ? `
-                <div class="gantt-actions-container" style="display:flex;gap:12px;align-items:center;opacity:0;transition:opacity 0.2s;">
-                   <div class="action-btn hover:text-accent-400" data-action="pulse" style="cursor:pointer;" title="Ver Avance">${pulseIcon}</div>
-                   <div class="action-btn hover:text-primary-400" data-action="add" style="cursor:pointer;" title="Añadir sub-tarea">${addIcon}</div>
-                   <div class="action-btn hover:text-primary-400" data-action="edit" style="cursor:pointer;" title="Editar tarea">${editIcon}</div>
-                   <div class="action-btn hover:text-red-500" data-action="delete" style="cursor:pointer;" title="Eliminar">${trashIcon}</div>
+                <div class="gantt-actions-container" style="display:flex;gap:8px;align-items:center;opacity:0;transition:opacity 0.2s;">
+                   <div class="action-btn" data-action="add" style="cursor:pointer;padding:4px;border-radius:6px;color:#64748b;display:flex;align-items:center;" title="Añadir sub-elemento">${addIcon}</div>
+                   <div class="action-btn" data-action="edit" style="cursor:pointer;padding:4px;border-radius:6px;background:#F7C20E;color:#000B1C;display:flex;align-items:center;" title="Editar">${editIcon}</div>
+                   <div class="action-btn" data-action="delete" style="cursor:pointer;padding:4px;border-radius:6px;color:#ef4444;display:flex;align-items:center;" title="Eliminar">${trashIcon}</div>
                 </div>
                 ` : ''}
               </div>
@@ -231,6 +249,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       gantt.init(containerRef.current!);
 
       // Convert data to Gantt format
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tasks: any[] = [];
 
       for (const partida of partidas) {
@@ -261,8 +280,8 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           });
 
           for (const activity of (item.activities || [])) {
-            const taskProgressLogs = dailyProgress.filter((dp: any) => dp.activity_id === activity.id);
-            const totalProgress = taskProgressLogs.reduce((sum: number, dp: any) => sum + Number(dp.progress_percent), 0);
+            const taskProgressLogs = dailyProgress.filter((dp: DB_DailyProgress) => dp.activity_id === activity.id);
+            const totalProgress = taskProgressLogs.reduce((sum: number, dp: DB_DailyProgress) => sum + Number(dp.progress_percent), 0);
 
             tasks.push({
               id: `a_${activity.id}`,
@@ -291,6 +310,13 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
       if (readonly) return;
 
+      // Store gantt ref for use in modal save
+      ganttRef.current = gantt;
+
+      // Disable default lightbox (we use our own React modal)
+      gantt.config.details_on_dblclick = false;
+      gantt.config.details_on_create = false;
+
       // CRUD Intercepts
       gantt.attachEvent("onTaskClick", (id: string, e: Event) => {
         const target = e.target as HTMLElement;
@@ -300,11 +326,30 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           if (action === 'add') {
             gantt.createTask({ text: "Nueva Tarea", duration: 1 }, id);
             return false;
-          } else if (action === 'edit' || action === 'pulse') {
-            gantt.showLightbox(id);
+          } else if (action === 'edit') {
+            // Open custom branded modal
+            const task = gantt.getTask(id);
+            // Convert DHTMLX exclusive end_date back to inclusive for display
+            const endRaw = task.end_date instanceof Date ? task.end_date : new Date(task.end_date);
+            const endInclusive = task.db_type === 'activity' 
+              ? format(subDays(endRaw, 1), 'yyyy-MM-dd') 
+              : '';
+            const startFormatted = task.start_date instanceof Date 
+              ? format(task.start_date, 'yyyy-MM-dd') 
+              : (task.start_date || '');
+              
+            setEditModal({
+              open: true,
+              taskId: id,
+              dbType: task.db_type || null,
+              name: task.text || '',
+              startDate: task.db_type === 'activity' ? startFormatted : '',
+              endDate: task.db_type === 'activity' ? endInclusive : '',
+              weight: task.weight ? String(task.weight) : '1',
+              saving: false,
+            });
             return false;
           } else if (action === 'delete') {
-            // Let dhtmlx nativelly call confirm and trigger onBeforeTaskDelete
             gantt.confirm({
               text: "¿Eliminar permanentemente de la base de datos?",
               ok: "Sí",
@@ -320,6 +365,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       });
 
       // Configure MS Project style auto-adding and sync
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gantt.attachEvent("onAfterTaskAdd", async (id: string, task: any) => {
         // Determine what level we are at
         const parentTask = task.parent && gantt.isTaskExists(task.parent) ? gantt.getTask(task.parent) : null;
@@ -366,6 +412,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         }
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gantt.attachEvent("onAfterTaskUpdate", async (id: string, task: any) => {
         if (!task.db_id) return; // Not synced yet
 
@@ -389,6 +436,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         }
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gantt.attachEvent("onAfterTaskDelete", async (id: string, task: any) => {
         if (!task.db_id) return;
         if (task.db_type === 'partida') await supabase.from('partidas').delete().eq('id', task.db_id);
@@ -401,24 +449,74 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
     return () => {
       if (ganttInitialized.current) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         import('dhtmlx-gantt').then((mod: any) => {
           const gantt = mod.gantt || mod.default || mod;
           gantt.clearAll();
         });
       }
     };
-  }, [partidas, dailyProgress]);
+  }, [partidas, dailyProgress, projectId, readonly, supabase, router, zoomLevel]);
+
+  // Save changes from custom edit modal
+  const handleEditSave = async () => {
+    if (!editModal.name.trim() || !editModal.taskId) return;
+    setEditModal((prev: EditModalState) => ({ ...prev, saving: true }));
+
+    try {
+      const gantt = ganttRef.current;
+      const task = gantt.getTask(editModal.taskId);
+
+      if (editModal.dbType === 'partida') {
+        await supabase.from('partidas').update({ name: editModal.name.trim() }).eq('id', task.db_id);
+        task.text = editModal.name.trim();
+        gantt.updateTask(editModal.taskId);
+      } else if (editModal.dbType === 'item') {
+        await supabase.from('items').update({ name: editModal.name.trim() }).eq('id', task.db_id);
+        task.text = editModal.name.trim();
+        gantt.updateTask(editModal.taskId);
+      } else if (editModal.dbType === 'activity') {
+        if (!editModal.startDate || !editModal.endDate) return;
+        const sd = parseISO(editModal.startDate);
+        const ed = parseISO(editModal.endDate);
+        await supabase.from('activities').update({
+          name: editModal.name.trim(),
+          start_date: editModal.startDate,
+          end_date: editModal.endDate,
+          weight: parseFloat(editModal.weight) || 1,
+        }).eq('id', task.db_id);
+        task.text = editModal.name.trim();
+        task.start_date = format(sd, 'yyyy-MM-dd');
+        task.end_date = format(addDays(ed, 1), 'yyyy-MM-dd');
+        task.weight = parseFloat(editModal.weight) || 1;
+        gantt.updateTask(editModal.taskId);
+      }
+
+      setEditModal((prev: EditModalState) => ({ ...prev, open: false, saving: false }));
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      setEditModal((prev: EditModalState) => ({ ...prev, saving: false }));
+    }
+  };
 
   // Handle Zoom change safely
   const handleZoomChange = (level: string) => {
     setZoomLevel(level);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     import('dhtmlx-gantt').then((mod: any) => {
       const gantt = mod.gantt || mod.default || mod;
       gantt.ext.zoom.setLevel(level);
     });
   };
 
+  // Label for the modal header
+  const editModalLabel = 
+    editModal.dbType === 'partida' ? 'Editar Partida' : 
+    editModal.dbType === 'item' ? 'Editar Ítem' : 'Editar Actividad';
+
   return (
+    <>
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-surface-50 p-2 md:p-4 flex flex-col h-screen w-screen" : "flex flex-col h-full"}>
       <div className="flex flex-row items-center gap-3 mb-4 shrink-0 overflow-x-auto scrollbar-hide py-1">
 
@@ -471,7 +569,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
                   try {
                     await supabase.from('partidas').delete().eq('project_id', projectId);
                     router.refresh();
-                  } catch (e) { }
+                  } catch { }
                 }
               }}
               className="p-1.5 md:p-2 border border-danger-500/20 text-danger-500 bg-danger-500/5 hover:bg-danger-500 hover:text-white rounded-lg transition-all flex-shrink-0 shadow-sm"
@@ -684,5 +782,105 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         </div>
       </div>
     </div>
+
+    {/* ── Custom Edit Modal ── */}
+    {editModal.open && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <span style={{ background: 'linear-gradient(135deg,#F7C20E,#daa90c)', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 800, color: '#000B1C', letterSpacing: '0.05em' }}>
+                {editModal.dbType?.toUpperCase()}
+              </span>
+              {editModalLabel}
+            </h3>
+            <button 
+              onClick={() => setEditModal((prev: EditModalState) => ({ ...prev, open: false }))}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Nombre</label>
+              <input 
+                type="text" 
+                value={editModal.name}
+                onChange={e => setEditModal(prev => ({ ...prev, name: e.target.value }))}
+                className="input-field"
+                placeholder={`Nombre de la ${editModal.dbType}...`}
+                autoFocus
+              />
+            </div>
+
+            {/* Dates + Weight — only for activities */}
+            {editModal.dbType === 'activity' && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Fecha inicio</label>
+                    <input 
+                      type="date" 
+                      value={editModal.startDate}
+                      onChange={e => setEditModal(prev => ({ ...prev, startDate: e.target.value }))}
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Fecha fin</label>
+                    <input 
+                      type="date" 
+                      value={editModal.endDate}
+                      onChange={e => setEditModal(prev => ({ ...prev, endDate: e.target.value }))}
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Peso / Ponderación
+                    <span className="ml-1 text-slate-400 font-normal normal-case">(0.01 – 100)</span>
+                  </label>
+                  <input 
+                    type="number"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    value={editModal.weight}
+                    onChange={e => setEditModal(prev => ({ ...prev, weight: e.target.value }))}
+                    className="input-field"
+                    placeholder="Ej: 5.5"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <button 
+              onClick={handleEditSave}
+              disabled={editModal.saving || !editModal.name.trim()}
+              className="btn-primary flex-1"
+            >
+              {editModal.saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+            <button 
+              onClick={() => setEditModal((prev: EditModalState) => ({ ...prev, open: false }))}
+              className="btn-secondary px-5"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
