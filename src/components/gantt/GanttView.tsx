@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ImportExcelButton } from './ImportExcelButton';
-import { addDays, subDays, parseISO, format } from 'date-fns';
+import { addDays, subDays, parseISO, format, differenceInDays } from 'date-fns';
 import { MilestoneModal } from './MilestoneModal';
 import { PartidaWithItems, DailyProgress as DB_DailyProgress } from '@/lib/types';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
@@ -17,6 +17,7 @@ interface EditModalState {
   startDate: string;
   endDate: string;
   weight: string;
+  progress: number;
   saving: boolean;
 }
 
@@ -44,6 +45,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
     startDate: '',
     endDate: '',
     weight: '1',
+    progress: 0,
     saving: false,
   });
   
@@ -59,6 +61,14 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       if (!ganttInitialized.current) {
         // Essential: register plugins BEFORE init but after the object is available
         gantt.plugins({ marker: true });
+
+        // Today Marker (Dynamic)
+        gantt.addMarker({
+          start_date: new Date(),
+          css: "today",
+          text: "HOY",
+          title: "Hoy: " + gantt.date.date_to_str("%d %M")(new Date())
+        });
 
         const { data: { user } } = await supabase.auth.getUser();
         const { data: proj } = await supabase.from('projects').select('owner_id').eq('id', projectId).single();
@@ -88,7 +98,8 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         gantt.config.date_format = '%Y-%m-%d';
         gantt.config.min_column_width = 40;
         gantt.config.scale_height = 60;
-        gantt.config.row_height = 36;
+        gantt.config.row_height = 32; 
+        gantt.config.task_height = 18; 
         gantt.config.readonly = false;
         gantt.config.details_on_dblclick = true;
         gantt.config.details_on_create = true;
@@ -178,9 +189,11 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
               if (task.$editing) {
                 return `
-                  <div class="inline-edit-row" style="display:flex;align-items:center;width:100%;height:100%;padding:2px 4px;gap:4px;">
-                    <input class="inline-edit-input" data-id="${task.id}" value="${task.text}" style="flex:1;height:24px;border:1.5px solid #2563eb;border-radius:6px;padding:0 8px;font-size:12px;outline:none;" />
-                    <button class="inline-save-btn" style="background:#2563eb;color:white;border:none;border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s;">${checkIcon}</button>
+                  <div class="inline-edit-row" style="display:flex;align-items:center;width:100%;height:100%;padding:0 4px;margin-right:8px;">
+                    <div style="flex:1;display:flex;align-items:center;height:24px;background:#ffffff;border:1.5px solid #2563eb;border-radius:6px;padding:0 4px 0 8px;gap:2px;">
+                      <input class="inline-edit-input" data-id="${task.id}" value="${task.text}" style="flex:1;height:100%;border:none;outline:none;font-size:13px;font-family:'Inter', sans-serif;letter-spacing:-0.02em;background:transparent;color:#1e293b;padding:0;" />
+                      <button class="inline-save-btn" style="background:#2563eb;color:white;border:none;border-radius:4px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;">${checkIcon}</button>
+                    </div>
                   </div>
                 `;
               }
@@ -205,9 +218,22 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           }
         ];
 
+
+
         gantt.init(containerRef.current!);
         ganttInitialized.current = true;
         ganttRef.current = gantt;
+
+        // Marcadores Visuales (Hoy e Hitos)
+        if (gantt.ext.marker) {
+          // Línea de HOY
+          gantt.addMarker({
+            start_date: new Date(),
+            css: "today",
+            text: "HOY",
+            title: "Hoy: " + gantt.date.date_to_str("%d %M")(new Date())
+          });
+        }
 
         if (!readonly) {
           gantt.config.details_on_dblclick = false;
@@ -253,6 +279,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
                   startDate: task.db_type === 'activity' ? startFormatted : '',
                   endDate: task.db_type === 'activity' ? endInclusive : '',
                   weight: task.weight ? String(task.weight) : '1',
+                  progress: task.progress || 0,
                   saving: false,
                 });
                 return false;
@@ -271,6 +298,15 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
             // Click on text area (not an action button) triggers inline edit
             if (!task.$editing && !readonly && target.closest('.gantt-clickable-text')) {
+              // Ensure only one is edited at a time
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              gantt.eachTask((t: any) => {
+                if (t.$editing) {
+                  t.$editing = false;
+                  gantt.refreshTask(t.id);
+                }
+              });
+
               task.$editing = true;
               gantt.refreshTask(id);
               setTimeout(() => {
@@ -479,9 +515,40 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
       gantt.clearAll();
       gantt.parse({ data: tasks, links: [] });
       
+      // Sync Milestones as Markers
+      const fetchMarkers = async () => {
+        try {
+          const { data: mtns } = await supabase
+            .from('project_milestones')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('date');
+            
+          if (mtns) {
+            // Limpiar marcadores antiguos excepto 'today'
+            const markers = gantt.getMarkers();
+            markers.forEach((m: { css: string, id: string }) => {
+              if (m.css !== 'today') gantt.deleteMarker(m.id);
+            });
+            
+            // Añadir hitos de la base de datos
+            mtns.forEach((m: { date: string, name: string }) => {
+              gantt.addMarker({
+                start_date: parseISO(m.date),
+                css: "project-milestone",
+                text: m.name,
+                title: m.name
+              });
+            });
+          }
+        } catch { console.warn("Could not load markers"); }
+      };
+      
+      fetchMarkers();
+      
       // Auto-fit Gantt range after parsing tasks
       gantt.render();
-
+      
       // Ensure 'Today' is visible after data load
       setTimeout(() => {
         gantt.showDate(new Date());
@@ -584,8 +651,36 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         <style dangerouslySetInnerHTML={{
           __html: `
           .gantt-dark-theme-wrapper .gantt_row:hover .gantt-actions-container { opacity: 1 !important; }
-          .gantt-dark-theme-wrapper .gantt_task_line.is-partida-bar { height: 12px !important; margin-top: 10px !important; border-radius: 4px !important; background-color: #334155 !important; }
-          .gantt-dark-theme-wrapper .gantt_task_line.is-item-bar { height: 8px !important; margin-top: 12px !important; border-radius: 3px !important; background-color: #64748b !important; }
+          .gantt-dark-theme-wrapper .gantt_task_line.is-partida-bar { height: 10px !important; margin-top: 11px !important; border-radius: 4px !important; background-color: #334155 !important; }
+          .gantt-dark-theme-wrapper .gantt_task_line.is-item-bar { height: 6px !important; margin-top: 13px !important; border-radius: 3px !important; background-color: #64748b !important; }
+          
+          /* Estilo condensado para la cuadrícula (Izquierda) */
+          .gantt-dark-theme-wrapper .gantt_tree_content,
+          .gantt-dark-theme-wrapper .gantt_grid_head_cell { 
+            font-family: 'Inter', sans-serif !important;
+            letter-spacing: -0.02em !important;
+            font-size: 13px !important;
+          }
+          .gantt-dark-theme-wrapper .gantt_grid_head_cell { font-size: 11px !important; text-transform: uppercase; }
+          
+          /* Estilos específicos para la barra de Actividades (Amarillas) */
+          .gantt-dark-theme-wrapper .gantt_task_line { 
+            height: 18px !important; 
+            margin-top: 7px !important;
+            border-radius: 4px !important; 
+            border: none !important; 
+          }
+          .gantt-dark-theme-wrapper .gantt_task_content { 
+            font-size: 10px !important; 
+            font-weight: 600 !important; 
+            line-height: 18px !important; 
+            letter-spacing: -0.02em !important; 
+            font-family: 'Inter', sans-serif !important;
+            color: #000B1C !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
           
           .inline-save-btn:hover { background: #1d4ed8 !important; }
           .inline-edit-input:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
@@ -604,10 +699,18 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           .side-panel-exit { transform: translateX(0); }
           .side-panel-exit-active { transform: translateX(100%); }
           
+          /* Unificación tipográfica en campos de edición */
+          .inline-edit-input, 
+          .side-panel-content input, 
+          .side-panel-content textarea {
+            font-family: 'Inter', sans-serif !important;
+            letter-spacing: -0.02em !important;
+          }
+          
           /* Visualización de Marcadores (Líneas de Hoy e Hitos) - Referencia con Curva S */
           .gantt-dark-theme-wrapper .gantt_marker {
             width: 3px !important;
-            z-index: 99 !important;
+            z-index: 150 !important;
             visibility: visible !important;
             display: block !important;
           }
@@ -678,8 +781,33 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50 shrink-0">
             <div>
-              <h3 className="text-lg font-bold text-slate-800">Detalles de Tarea</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{editModal.dbType}</p>
+              {/* Context Breadcrumb */}
+              {(() => {
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const gantt = (window as any).gantt;
+                  if (!gantt || !editModal.taskId) return null;
+                  const task = gantt.getTask(editModal.taskId);
+                  const parentItem = task.parent ? gantt.getTask(task.parent) : null;
+                  const parentPartida = parentItem?.parent ? gantt.getTask(parentItem.parent) : null;
+                  
+                  return (
+                    <div className="flex items-center gap-1.5 mb-1 opacity-80 flex-wrap">
+                      {parentPartida && (
+                        <>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{parentPartida.text}</span>
+                          <span className="text-slate-300 text-[11px]">/</span>
+                        </>
+                      )}
+                      {parentItem && (
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{parentItem.text}</span>
+                      )}
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+              <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-tight">Detalles de Tarea</h3>
+              <p className="text-[10px] text-primary-600 font-bold uppercase tracking-widest mt-0.5">{editModal.dbType}</p>
             </div>
             <button 
               onClick={() => setEditModal(prev => ({ ...prev, open: false }))} 
@@ -692,72 +820,124 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
           </div>
 
           {/* Form Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nombre de Actividad</label>
-                <textarea 
-                  value={editModal.name} 
-                  onChange={e => setEditModal(prev => ({ ...prev, name: e.target.value }))} 
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all resize-none font-medium text-slate-700 min-h-[80px]"
-                />
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            {/* Name - Static View */}
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">Nombre de Actividad</label>
+              <div className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 leading-relaxed border-dashed">
+                {editModal.name}
               </div>
+            </div>
 
-              {editModal.dbType === 'activity' && (
-                <>
-                  <div className="grid grid-cols-1 gap-4">
+            {editModal.dbType === 'activity' && (
+              <>
+                {/* Editable Dates */}
+                <div className="bg-primary-50/40 p-4 rounded-2xl border border-primary-100/50 space-y-4">
+                  <h4 className="text-[10px] font-bold text-primary-600 uppercase tracking-widest flex items-center gap-2">
+                     <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                     Período de Ejecución
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Fecha Inicio</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 px-1">Fecha Inicio</label>
                       <input 
                         type="date" 
                         value={editModal.startDate} 
                         onChange={e => setEditModal(prev => ({ ...prev, startDate: e.target.value }))} 
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all font-medium text-slate-700" 
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Fecha Fin</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 px-1">Fecha Fin</label>
                       <input 
                         type="date" 
                         value={editModal.endDate} 
                         onChange={e => setEditModal(prev => ({ ...prev, endDate: e.target.value }))} 
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all font-medium text-slate-700" 
                       />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Real-time Progress & Status Monitoring */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Monitoreo de Avance</h4>
+                    {(() => {
+                      const today = new Date();
+                      const start = parseISO(editModal.startDate);
+                      const progress = editModal.progress * 100;
+                      
+                      if (progress >= 100) return <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase border border-emerald-100">Completada</span>;
+                      if (progress > 0) return <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-600 text-[9px] font-black uppercase border border-sky-100">En Ejecución</span>;
+                      if (today > start) return <span className="px-2 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[9px] font-black uppercase border border-orange-100">Retrasada</span>;
+                      return <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-black uppercase border border-slate-200">Pendiente</span>;
+                    })()}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-end justify-between">
+                      <span className="text-2xl font-black text-slate-800">{Math.round(editModal.progress * 100)}%</span>
+                      <span className="text-[10px] font-bold text-slate-400 mb-1">PROGRESO REAL</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden p-0.5 border border-slate-300/50">
+                      <div 
+                        className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
+                        style={{ 
+                          width: `${editModal.progress * 100}%`,
+                          backgroundColor: editModal.progress >= 1 ? '#10b981' : '#F7C20E' 
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duración</label>
+                    <div className="text-lg sm:text-xl font-black text-slate-700 flex items-baseline gap-1">
+                      {(() => {
+                        if (!editModal.startDate || !editModal.endDate) return '-';
+                        try {
+                          const diff = differenceInDays(parseISO(editModal.endDate), parseISO(editModal.startDate)) + 1;
+                          return diff;
+                        } catch { return '-'; }
+                      })()}
+                      <span className="text-[10px] font-bold text-slate-400">DÍAS</span>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Peso en el cronograma (%)</label>
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        step="0.1" 
-                        value={editModal.weight} 
-                        onChange={e => setEditModal(prev => ({ ...prev, weight: e.target.value }))} 
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all pr-12" 
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+                  <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-2xl border-dashed">
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Peso</label>
+                    <div className="text-lg sm:text-xl font-black text-slate-700 flex items-baseline gap-1">
+                      {editModal.weight}
+                      <span className="text-[10px] font-bold text-slate-400">%</span>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
 
             {/* Visual Guide */}
-            <div className="p-4 bg-primary-500/5 border border-primary-500/10 rounded-2xl">
-              <h4 className="text-[11px] font-bold text-primary-600 uppercase tracking-wider mb-2">Ayuda</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Los cambios se guardan permanentemente en la base de datos de Supabase. El cronograma se recalculará automáticamente.
+            <div className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Solo el <strong>Período de Ejecución</strong> es editable en esta vista detallada. Nombre y peso se sincronizan automáticamente.
               </p>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-slate-100 bg-white shrink-0">
+          <div className="p-4 sm:p-6 border-t border-slate-100 bg-white shrink-0">
             <button 
               onClick={handleEditSave} 
               disabled={editModal.saving} 
-              className="w-full py-4 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 active:scale-[0.98] rounded-xl shadow-lg shadow-primary-500/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 sm:py-4 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 active:scale-[0.98] rounded-xl shadow-lg shadow-primary-500/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
             >
               {editModal.saving ? (
                 <>
