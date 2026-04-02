@@ -102,10 +102,14 @@ export function useGanttCRUD() {
     try {
       const table = type === 'partida' ? 'partidas' : type === 'item' ? 'items' : 'activities';
       
-      // Batch updates usando Promise.all por el momento. (Fase O reemplazará por RPC SQL)
-      await Promise.all(siblingDbIds.map((id, index) => {
-        return supabase.from(table).update({ sort_order: index }).eq('id', id);
-      }));
+      const updates = siblingDbIds.map((id, index) => ({ id, sort_order: index }));
+
+      const { error } = await supabase.rpc('batch_update_sort_orders', {
+        p_table_name: table,
+        p_updates: updates
+      });
+
+      if (error) throw error;
 
       return { success: true };
     } catch (err: unknown) {

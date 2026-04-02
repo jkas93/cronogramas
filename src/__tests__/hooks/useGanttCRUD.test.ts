@@ -4,6 +4,8 @@ import { useGanttCRUD } from '@/hooks/useGanttCRUD';
 import { createMockSupabase } from '../mocks/supabase';
 import * as useSupabaseModule from '@/hooks/useSupabase';
 
+type CrudResult = { success: boolean; data?: unknown; error?: string };
+
 // Mock del cliente Supabase
 vi.mock('@/hooks/useSupabase', () => ({
   useSupabase: vi.fn(),
@@ -24,7 +26,7 @@ describe('useGanttCRUD', () => {
     
     mockSupabase._mocks.single.mockResolvedValueOnce({ data: { id: 'p123' }, error: null });
 
-    let crudRes: any;
+    let crudRes: CrudResult = { success: false };
     await act(async () => {
       crudRes = await result.current.createTask('partida', 'proj_1', null, { text: 'Mi Partida' }, 0);
     });
@@ -43,7 +45,7 @@ describe('useGanttCRUD', () => {
     
     mockSupabase._mocks.eq.mockResolvedValueOnce({ error: { message: 'Database connection error' } });
 
-    let crudRes: any;
+    let crudRes: CrudResult = { success: false };
     await act(async () => {
       crudRes = await result.current.updateTask('item', 'item_2', { name: 'New Item' });
     });
@@ -68,18 +70,19 @@ describe('useGanttCRUD', () => {
   it('6. reorderSiblings ejecuta batch update', async () => {
     const { result } = renderHook(() => useGanttCRUD());
     
-    // Al ser un map (3 elementos), resolvemos eq tres veces
-    mockSupabase._mocks.eq.mockResolvedValue({ error: null });
+    mockSupabase._mocks.rpc.mockResolvedValueOnce({ error: null });
 
     await act(async () => {
       await result.current.reorderSiblings('item', ['id1', 'id2', 'id3']);
     });
 
-    // Debería haberse llamado update 3 veces
-    expect(mockSupabase._mocks.update).toHaveBeenCalledTimes(3);
-    // Verificar que se haya establecido el índice 0, 1, 2 correctamente
-    expect(mockSupabase._mocks.update).toHaveBeenCalledWith({ sort_order: 0 });
-    expect(mockSupabase._mocks.update).toHaveBeenCalledWith({ sort_order: 1 });
-    expect(mockSupabase._mocks.update).toHaveBeenCalledWith({ sort_order: 2 });
+    expect(mockSupabase._mocks.rpc).toHaveBeenCalledWith('batch_update_sort_orders', {
+      p_table_name: 'items',
+      p_updates: [
+        { id: 'id1', sort_order: 0 },
+        { id: 'id2', sort_order: 1 },
+        { id: 'id3', sort_order: 2 }
+      ]
+    });
   });
 });

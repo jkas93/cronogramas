@@ -2,7 +2,8 @@
 import { vi } from 'vitest';
 
 export const createMockSupabase = () => {
-  const selfObject: any = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selfObject: Record<string, any> = {};
   const mockFrom = vi.fn().mockReturnValue(selfObject);
   const mockSelect = vi.fn().mockReturnValue(selfObject);
   const mockInsert = vi.fn().mockReturnValue(selfObject);
@@ -13,6 +14,7 @@ export const createMockSupabase = () => {
   const mockOrder = vi.fn().mockReturnValue(selfObject);
   const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null });
   const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  const mockRpc = vi.fn().mockResolvedValue({ data: null, error: null });
 
   Object.assign(selfObject, {
     auth: {
@@ -28,6 +30,7 @@ export const createMockSupabase = () => {
     order: mockOrder,
     single: mockSingle,
     maybeSingle: mockMaybeSingle,
+    rpc: mockRpc,
     _mocks: {
       from: mockFrom,
       select: mockSelect,
@@ -39,6 +42,7 @@ export const createMockSupabase = () => {
       order: mockOrder,
       single: mockSingle,
       maybeSingle: mockMaybeSingle,
+      rpc: mockRpc,
     }
   });
 

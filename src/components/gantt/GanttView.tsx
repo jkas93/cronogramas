@@ -12,6 +12,7 @@ import { GanttChart } from './GanttChart';
 import { GanttSidebar } from './GanttSidebar';
 import { ImportExcelButton } from './ImportExcelButton';
 import { MilestoneModal } from './MilestoneModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 
 interface Props {
@@ -132,14 +133,16 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
 
         {/* Workspace */}
         <div className={`glass-card overflow-hidden gantt-dark-theme-wrapper border-b-0 rounded-b-none ${isFullscreen ? 'flex-1' : 'h-[600px] min-h-[500px]'}`}>
-          <GanttChart
-            projectId={projectId}
-            tasksData={tasksData}
-            readonly={readonly}
-            zoomLevel={zoomLevel}
-            onEditTask={handleEditTaskClick}
-            ganttRef={ganttRef}
-          />
+          <ErrorBoundary>
+            <GanttChart
+              projectId={projectId}
+              tasksData={tasksData}
+              readonly={readonly}
+              zoomLevel={zoomLevel}
+              onEditTask={handleEditTaskClick}
+              ganttRef={ganttRef}
+            />
+          </ErrorBoundary>
         </div>
 
         {/* Footer Metrics */}
