@@ -15,6 +15,7 @@ describe('useGanttCRUD', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSupabase = createMockSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useSupabaseModule.useSupabase as any).mockReturnValue(mockSupabase);
   });
 

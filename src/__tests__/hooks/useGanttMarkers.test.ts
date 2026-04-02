@@ -10,11 +10,13 @@ vi.mock('@/hooks/useSupabase', () => ({
 
 describe('useGanttMarkers', () => {
   let mockSupabase: ReturnType<typeof createMockSupabase>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockGanttInstance: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSupabase = createMockSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useSupabaseModule.useSupabase as any).mockReturnValue(mockSupabase);
 
     mockGanttInstance = {

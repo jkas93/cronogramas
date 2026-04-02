@@ -6,7 +6,7 @@ import { toDbEndDate } from '@/lib/gantt/date-utils';
 interface CrudResult {
   success: boolean;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export function useGanttCRUD() {
@@ -18,14 +18,14 @@ export function useGanttCRUD() {
     type: GanttDbType,
     projectId: string,
     parentId: string | null,
-    ganttTask: any,
+    ganttTask: Record<string, unknown>,
     sortOrder: number
   ): Promise<CrudResult> => {
     setIsProcessing(true);
     try {
       let table = '';
-      let insertData: any = {
-        name: ganttTask.text,
+      const insertData: Record<string, string | number | null> = {
+        name: String(ganttTask.text),
         sort_order: sortOrder,
       };
 
@@ -34,22 +34,22 @@ export function useGanttCRUD() {
         insertData.project_id = projectId;
       } else if (type === 'item') {
         table = 'items';
-        // el parentId viene del gantt como 'p_uuid', por lo que extraemos la uuid
-        insertData.partida_id = parentId?.replace('p_', '');
+        insertData.partida_id = parentId?.replace('p_', '') || null;
       } else if (type === 'activity') {
         table = 'activities';
-        insertData.item_id = parentId?.replace('i_', '');
-        insertData.start_date = ganttTask.start_date ? new Date(ganttTask.start_date).toISOString().split('T')[0] : null;
-        insertData.end_date = ganttTask.end_date ? toDbEndDate(ganttTask.end_date) : null;
-        insertData.weight = 1; // default fallback
+        insertData.item_id = parentId?.replace('i_', '') || null;
+        insertData.start_date = ganttTask.start_date ? new Date(String(ganttTask.start_date)).toISOString().split('T')[0] : null;
+        insertData.end_date = ganttTask.end_date ? toDbEndDate(String(ganttTask.end_date)) : null;
+        insertData.weight = 1;
       }
 
       const { data, error } = await supabase.from(table).insert(insertData).select().single();
       if (error) throw error;
       return { success: true, data };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error creating ${type}:`, err);
-      return { success: false, error: err.message };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -58,7 +58,7 @@ export function useGanttCRUD() {
   const updateTask = useCallback(async (
     type: GanttDbType,
     dbId: string,
-    updates: Record<string, any>
+    updates: Record<string, unknown>
   ): Promise<CrudResult> => {
     setIsProcessing(true);
     try {
@@ -66,9 +66,10 @@ export function useGanttCRUD() {
       const { error } = await supabase.from(table).update(updates).eq('id', dbId);
       if (error) throw error;
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error updating ${type}:`, err);
-      return { success: false, error: err.message };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -84,9 +85,10 @@ export function useGanttCRUD() {
       const { error } = await supabase.from(table).delete().eq('id', dbId);
       if (error) throw error;
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error deleting ${type}:`, err);
-      return { success: false, error: err.message };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -106,9 +108,10 @@ export function useGanttCRUD() {
       }));
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error reordering ${type}s:`, err);
-      return { success: false, error: err.message };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
     } finally {
       setIsProcessing(false);
     }
