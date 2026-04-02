@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { evaluateAlerts } from '@/lib/alerts';
 import { sampleActivities, sampleDailyProgress } from '../fixtures/sampleData';
 

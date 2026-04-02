@@ -1,3 +1,6 @@
+
+import { vi } from 'vitest';
+
 export const createMockSupabase = () => {
   const mockFrom = vi.fn().mockReturnThis();
   const mockSelect = vi.fn().mockReturnThis();
