@@ -45,7 +45,7 @@ export function useGanttMarkers() {
         addMarker({
           id: 'today_marker_' + Date.now(),
           start_date: ganttToday,
-          css: 'today-marker',
+          css: 'today',
           text: 'HOY',
           title: `Hoy: ${format(today, 'dd/MM/yyyy')}`
         });

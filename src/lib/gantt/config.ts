@@ -69,7 +69,7 @@ export const GANTT_ZOOM_CONFIG = {
   ]
 };
 
-export function getTaskClass(start: Date, end: Date, task: any): string {
+export function getTaskClass(_start: Date, _end: Date, task: { db_type: string; progress: number }): string {
   if (task.db_type === 'partida') return 'is-partida-bar';
   if (task.db_type === 'item') return 'is-item-bar';
   if (task.progress >= 1) return 'completed-task';
@@ -82,7 +82,7 @@ export const GANTT_COLUMNS = (readonly: boolean) => [
     label: 'ACTIVIDAD / DESCRIPCIÓN',
     tree: true,
     width: '*',
-    template: (task: any) => {
+    template: (task: { db_type: string; $editing?: boolean; id: string; text: string }) => {
       const titleColor = task.db_type === 'partida' ? 'color: #334155; font-weight: bold;' : (task.db_type === 'item' ? 'color: #475569; font-weight: 600;' : 'color: #60a5fa; font-weight: 500;');
       
       const addIcon = `<svg style="width:14px;height:14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>`;

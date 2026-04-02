@@ -15,7 +15,7 @@ export interface GanttTaskData {
   progress?: number;
   progressColor?: string;
   weight?: number;
-  [key: string]: any; // dhtmlx-gantt add its own props
+  [key: string]: unknown; // dhtmlx-gantt add its own props
 }
 
 export interface EditPanelState {
@@ -27,7 +27,6 @@ export interface EditPanelState {
   endDate: string;
   weight: string;
   progress: number;
-  saving: boolean;
 }
 
 export type ZoomLevel = 'day' | 'week' | 'month';
