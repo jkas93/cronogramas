@@ -1,4 +1,4 @@
-import type { DailyProgress, PartidaWithItems } from '@/lib/types';
+import type { DailyProgress, PartidaWithItems, Activity } from '@/lib/types';
 import { toGanttEndDate } from './date-utils';
 import type { GanttTaskData } from './types';
 
@@ -76,7 +76,7 @@ export function buildTasksFromPartidas(
       });
 
       // Validamos que existan activities
-      const activities = ('activities' in item) ? item.activities as any[] : [];
+      const activities = ('activities' in item) ? item.activities as Activity[] : [];
       const sortedActivities = [...activities].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
       for (const activity of sortedActivities) {

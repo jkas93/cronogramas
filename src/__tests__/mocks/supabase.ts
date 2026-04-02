@@ -2,18 +2,19 @@
 import { vi } from 'vitest';
 
 export const createMockSupabase = () => {
-  const mockFrom = vi.fn().mockReturnThis();
-  const mockSelect = vi.fn().mockReturnThis();
-  const mockInsert = vi.fn().mockReturnThis();
-  const mockUpdate = vi.fn().mockReturnThis();
-  const mockDelete = vi.fn().mockReturnThis();
-  const mockEq = vi.fn().mockReturnThis();
-  const mockIn = vi.fn().mockReturnThis();
-  const mockOrder = vi.fn().mockReturnThis();
+  const selfObject: any = {};
+  const mockFrom = vi.fn().mockReturnValue(selfObject);
+  const mockSelect = vi.fn().mockReturnValue(selfObject);
+  const mockInsert = vi.fn().mockReturnValue(selfObject);
+  const mockUpdate = vi.fn().mockReturnValue(selfObject);
+  const mockDelete = vi.fn().mockReturnValue(selfObject);
+  const mockEq = vi.fn().mockReturnValue(selfObject);
+  const mockIn = vi.fn().mockReturnValue(selfObject);
+  const mockOrder = vi.fn().mockReturnValue(selfObject);
   const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null });
   const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
 
-  return {
+  Object.assign(selfObject, {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null }),
     },
@@ -27,8 +28,6 @@ export const createMockSupabase = () => {
     order: mockOrder,
     single: mockSingle,
     maybeSingle: mockMaybeSingle,
-    
-    // Helper to extract the mocks for assertions
     _mocks: {
       from: mockFrom,
       select: mockSelect,
@@ -41,5 +40,7 @@ export const createMockSupabase = () => {
       single: mockSingle,
       maybeSingle: mockMaybeSingle,
     }
-  };
+  });
+
+  return selfObject;
 };

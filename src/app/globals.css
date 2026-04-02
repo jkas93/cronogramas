@@ -309,13 +309,15 @@ body {
   border: none !important;
   border-radius: 4px !important;
   box-shadow: 0 2px 8px rgba(247, 194, 14, 0.25) !important;
+  height: 18px !important; 
+  margin-top: 7px !important;
 }
 
 .gantt_task_line.is-partida-bar {
   background: #334155 !important;
-  height: 12px !important;
-  line-height: 12px !important;
-  margin-top: 10px !important;
+  height: 10px !important;
+  line-height: 10px !important;
+  margin-top: 11px !important;
   border-radius: 4px !important;
   border: 1px solid rgba(0,0,0,0.4) !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
@@ -323,9 +325,9 @@ body {
 
 .gantt_task_line.is-item-bar {
   background: #64748b !important;
-  height: 8px !important;
-  line-height: 8px !important;
-  margin-top: 12px !important;
+  height: 6px !important;
+  line-height: 6px !important;
+  margin-top: 13px !important;
   border-radius: 3px !important;
   border: 1px solid rgba(0,0,0,0.2) !important;
   box-shadow: none !important;
@@ -377,3 +379,106 @@ body {
   -o-user-drag: none;
 }
 
+/* =============================================================
+   Estilos unificados del GanttView Inline
+   ============================================================= */
+.gantt-dark-theme-wrapper .gantt_row:hover .gantt-actions-container { opacity: 1 !important; }
+
+/* Estilo condensado para la cuadrícula (Izquierda) */
+.gantt-dark-theme-wrapper .gantt_tree_content,
+.gantt-dark-theme-wrapper .gantt_grid_head_cell { 
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: -0.02em !important;
+  font-size: 13px !important;
+}
+.gantt-dark-theme-wrapper .gantt_grid_head_cell { font-size: 11px !important; text-transform: uppercase; }
+
+.gantt-dark-theme-wrapper .gantt_task_content { 
+  font-size: 10px !important; 
+  font-weight: 600 !important; 
+  line-height: 18px !important; 
+  letter-spacing: -0.02em !important; 
+  font-family: 'Inter', sans-serif !important;
+  color: #000B1C !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.inline-save-btn:hover { background: #1d4ed8 !important; }
+.inline-edit-input:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+
+/* Side Panel (Drawer) Styles */
+.side-panel-overlay {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+}
+.side-panel-content {
+  box-shadow: -10px 0 30px rgba(0,0,0,0.15);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.side-panel-enter { transform: translateX(100%); }
+.side-panel-enter-active { transform: translateX(0); }
+.side-panel-exit { transform: translateX(0); }
+.side-panel-exit-active { transform: translateX(100%); }
+
+/* Unificación tipográfica en campos de edición */
+.inline-edit-input, 
+.side-panel-content input, 
+.side-panel-content textarea {
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Visualización de Marcadores (Líneas de Hoy e Hitos) - Referencia con Curva S */
+.gantt-dark-theme-wrapper .gantt_marker {
+  width: 3px !important;
+  z-index: 150 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+.gantt-dark-theme-wrapper .gantt_marker.today { 
+  background-color: #f43f5e !important; 
+}
+.gantt-dark-theme-wrapper .gantt_marker.today .gantt_marker_content { 
+  position: sticky !important; 
+  background: #f43f5e; 
+  color: #ffffff; 
+  border-radius: 6px; 
+  padding: 4px 10px; 
+  font-size: 11px; 
+  font-weight: 900; 
+  top: 62px !important; 
+  transform: translateX(-50%); 
+  z-index: 101; 
+  white-space: nowrap;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+.gantt-dark-theme-wrapper .gantt_marker.project-milestone { 
+  background: transparent; 
+  z-index: 90 !important; 
+}
+.gantt-dark-theme-wrapper .gantt_marker.project-milestone .gantt_marker_content { 
+  background: #F7C20E; 
+  color: #000B1C; 
+  border: 2px solid #ffffff; 
+  border-radius: 4px; 
+  width: 14px; 
+  height: 14px; 
+  top: 60px !important; 
+  transform: rotate(45deg) translateX(-25%); 
+  z-index: 101; 
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+.gantt-dark-theme-wrapper .gantt_marker.project-milestone::after { 
+  content: ''; 
+  position: absolute; 
+  top:0; 
+  bottom:0; 
+  left:0; 
+  right:0; 
+  background-image: linear-gradient(to bottom, #F7C20E 60%, transparent 10%); 
+  background-size: 3px 14px; 
+  background-repeat: repeat-y; 
+  opacity: 1 !important; 
+}

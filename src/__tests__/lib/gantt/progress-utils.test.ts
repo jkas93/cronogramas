@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildProgressMap, calculateActivityProgress, buildTasksFromPartidas } from '@/lib/gantt/progress-utils';
+import type { DailyProgress } from '@/lib/types';
 import { samplePartidas, sampleDailyProgress } from '../../fixtures/sampleData';
 
 describe('Progress Utils', () => {
@@ -13,7 +14,7 @@ describe('Progress Utils', () => {
 
   it('2. buildProgressMap maneja arrays vacíos/nulos', () => {
     expect(buildProgressMap([]).size).toBe(0);
-    expect(buildProgressMap(null as any).size).toBe(0);
+    expect(buildProgressMap(null as unknown as DailyProgress[]).size).toBe(0);
   });
 
   it('3. calculateActivityProgress suma y clampa a 1.0 (100%)', () => {
