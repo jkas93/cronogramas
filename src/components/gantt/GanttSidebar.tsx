@@ -73,7 +73,7 @@ export function GanttSidebar({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 200 }}>
       {/* Overlay */}
       <div 
         className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity"
@@ -120,9 +120,9 @@ export function GanttSidebar({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-['Inter']"
+              className={`w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-900 focus:outline-none transition-all font-['Inter'] ${dbType === 'activity' ? 'bg-gray-50 opacity-60 cursor-not-allowed' : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
               placeholder="Descripción"
-              readOnly={readonly || saving}
+              readOnly={readonly || saving || dbType === 'activity'}
             />
           </div>
 
@@ -167,8 +167,8 @@ export function GanttSidebar({
                     step="1"
                     value={formData.weight}
                     onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                    className="w-full pl-3 pr-8 py-2 bg-white border border-blue-200 rounded-lg text-[13px] font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                    readOnly={readonly || saving}
+                    className="w-full pl-3 pr-8 py-2 bg-blue-50/30 border border-blue-200/60 rounded-lg text-[13px] font-bold text-blue-900/50 cursor-not-allowed focus:outline-none transition-all"
+                    readOnly={true}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-blue-400 font-medium text-xs">
                     pts
