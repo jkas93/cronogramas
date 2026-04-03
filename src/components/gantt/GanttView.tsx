@@ -132,7 +132,7 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
         </div>
 
         {/* Workspace */}
-        <div className={`glass-card overflow-hidden gantt-dark-theme-wrapper border-b-0 rounded-b-none ${isFullscreen ? 'flex-1' : 'h-[600px] min-h-[500px]'}`}>
+        <div className={`relative z-10 glass-card overflow-hidden gantt-dark-theme-wrapper border-b-0 rounded-b-none ${isFullscreen ? 'flex-1' : 'h-[600px] min-h-[500px]'}`}>
           <ErrorBoundary>
             <GanttChart
               projectId={projectId}
