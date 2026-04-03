@@ -9,6 +9,14 @@ interface CrudResult {
   data?: unknown;
 }
 
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return String(err);
+}
+
 export function useGanttCRUD() {
   const supabase = useSupabase();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,8 +56,7 @@ export function useGanttCRUD() {
       return { success: true, data };
     } catch (err: unknown) {
       console.error(`Error creating ${type}:`, err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
+      return { success: false, error: extractErrorMessage(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -68,8 +75,7 @@ export function useGanttCRUD() {
       return { success: true };
     } catch (err: unknown) {
       console.error(`Error updating ${type}:`, err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
+      return { success: false, error: extractErrorMessage(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -87,8 +93,7 @@ export function useGanttCRUD() {
       return { success: true };
     } catch (err: unknown) {
       console.error(`Error deleting ${type}:`, err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
+      return { success: false, error: extractErrorMessage(err) };
     } finally {
       setIsProcessing(false);
     }
@@ -114,8 +119,7 @@ export function useGanttCRUD() {
       return { success: true };
     } catch (err: unknown) {
       console.error(`Error reordering ${type}s:`, err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { success: false, error: err instanceof Error ? err.message : (err as any)?.message || String(err) };
+      return { success: false, error: extractErrorMessage(err) };
     } finally {
       setIsProcessing(false);
     }

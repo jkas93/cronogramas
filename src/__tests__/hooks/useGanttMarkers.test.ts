@@ -71,4 +71,20 @@ describe('useGanttMarkers', () => {
     expect(mockGanttInstance.addMarker.mock.calls[1][0].text).toBe('Inicio de Obra');
     expect(mockGanttInstance.renderMarkers).toHaveBeenCalled();
   });
+
+  it('4. syncMarkers no explota si addMarker falla', async () => {
+    const { result } = renderHook(() => useGanttMarkers());
+    
+    mockGanttInstance.addMarker = vi.fn().mockImplementation(() => {
+      throw new Error('_markers is undefined');
+    });
+    
+    mockSupabase._mocks.eq.mockResolvedValueOnce({ data: [], error: null });
+    
+    await act(async () => {
+      await result.current.syncMarkers(mockGanttInstance, 'proj_1');
+    });
+    
+    expect(mockGanttInstance.addMarker).toHaveBeenCalled();
+  });
 });

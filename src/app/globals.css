@@ -431,8 +431,11 @@ body {
 }
 
 /* Visualización de Marcadores (Líneas de Hoy e Hitos) - Referencia con Curva S */
+.gantt-root-container {
+  --scroll-top: 0px;
+}
 .gantt-dark-theme-wrapper .gantt_marker {
-  width: 3px !important;
+  width: 2px !important;
   z-index: 150 !important;
   visibility: visible !important;
   display: block !important;
@@ -441,44 +444,73 @@ body {
   background-color: #f43f5e !important; 
 }
 .gantt-dark-theme-wrapper .gantt_marker.today .gantt_marker_content { 
-  position: sticky !important; 
+  position: absolute !important; 
+  left: 50%;
+  top: 62px !important; 
+  transform: translateX(-50%); 
   background: #f43f5e; 
   color: #ffffff; 
   border-radius: 6px; 
   padding: 4px 10px; 
   font-size: 11px; 
   font-weight: 900; 
-  top: 62px !important; 
-  transform: translateX(-50%); 
   z-index: 101; 
   white-space: nowrap;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  width: max-content;
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3);
+  margin-top: var(--scroll-top, 0px);
+  transition: margin-top 0.1s ease-out;
 }
 .gantt-dark-theme-wrapper .gantt_marker.project-milestone { 
   background: transparent; 
   z-index: 90 !important; 
-}
-.gantt-dark-theme-wrapper .gantt_marker.project-milestone .gantt_marker_content { 
-  background: #F7C20E; 
-  color: #000B1C; 
-  border: 2px solid #ffffff; 
-  border-radius: 4px; 
-  width: 14px; 
-  height: 14px; 
-  top: 60px !important; 
-  transform: rotate(45deg) translateX(-25%); 
-  z-index: 101; 
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 .gantt-dark-theme-wrapper .gantt_marker.project-milestone::after { 
   content: ''; 
   position: absolute; 
   top:0; 
   bottom:0; 
-  left:0; 
-  right:0; 
+  left: 50%; 
+  transform: translateX(-50%);
+  width: 2px;
   background-image: linear-gradient(to bottom, #F7C20E 60%, transparent 10%); 
-  background-size: 3px 14px; 
+  background-size: 2px 14px; 
   background-repeat: repeat-y; 
   opacity: 1 !important; 
+}
+.gantt-dark-theme-wrapper .gantt_marker.project-milestone::before {
+  content: '';
+  position: absolute;
+  top: 55px; /* Alineado justo bajo la cabecera */
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: #F7C20E;
+  border: 2px solid #ffffff;
+  border-radius: 3px;
+  transform: rotate(45deg);
+  z-index: 101;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-top: var(--scroll-top, 0px);
+  transition: margin-top 0.1s ease-out;
+}
+.gantt-dark-theme-wrapper .gantt_marker.project-milestone .gantt_marker_content { 
+  position: absolute !important;
+  left: 50%;
+  top: 60px !important;
+  transform: translateX(12px) translateY(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  color: #000B1C; 
+  border: 1px solid #F7C20E; 
+  border-radius: 4px; 
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  width: max-content;
+  white-space: nowrap;
+  z-index: 101; 
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-top: var(--scroll-top, 0px);
+  transition: margin-top 0.1s ease-out;
 }

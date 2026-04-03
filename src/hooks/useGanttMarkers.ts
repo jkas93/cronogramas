@@ -15,13 +15,13 @@ export function useGanttMarkers() {
 
     try {
       // 1. Limpiar todos los marcadores existentes para asegurar idempotencia
-      const getMarkers = ganttInstance.getMarkers as () => Array<{id: string}>;
-      const deleteMarker = ganttInstance.deleteMarker as (id: string) => void;
-      const addMarker = ganttInstance.addMarker as (marker: Record<string, unknown>) => void;
-      const renderMarkers = ganttInstance.renderMarkers as () => void;
+      const getMarkers = typeof ganttInstance.getMarkers === 'function' ? ganttInstance.getMarkers.bind(ganttInstance) : null;
+      const deleteMarker = typeof ganttInstance.deleteMarker === 'function' ? ganttInstance.deleteMarker.bind(ganttInstance) : null;
+      const addMarker = typeof ganttInstance.addMarker === 'function' ? ganttInstance.addMarker.bind(ganttInstance) : null;
+      const renderMarkers = typeof ganttInstance.renderMarkers === 'function' ? ganttInstance.renderMarkers.bind(ganttInstance) : null;
 
       const existingMarkers = getMarkers ? getMarkers() : [];
-      existingMarkers.forEach((m) => {
+      existingMarkers.forEach((m: {id: string}) => {
         if (deleteMarker) deleteMarker(m.id);
       });
 
@@ -36,35 +36,47 @@ export function useGanttMarkers() {
       }
 
       // 3. Agregar marcador Hoy
+      // Usamos la fecha y hora actual exacta local de Lima para que la línea roja sea precisa
       const today = new Date();
-      // Le agregamos 1 dia para que caiga al final del día visualmente en dhtmlx
-      const ganttToday = new Date(today);
-      ganttToday.setDate(ganttToday.getDate() + 1);
 
       if (addMarker) {
-        addMarker({
-          id: 'today_marker_' + Date.now(),
-          start_date: ganttToday,
-          css: 'today',
-          text: 'HOY',
-          title: `Hoy: ${format(today, 'dd/MM/yyyy')}`
-        });
+        try {
+          addMarker({
+            id: 'today_marker_' + Date.now(),
+            start_date: today,
+            css: 'today',
+            text: 'HOY',
+            title: `Hoy: ${format(today, 'dd/MM/yyyy')}`
+          });
+        } catch (err) {
+          console.warn('Marker plugin not ready, skipping today marker:', err);
+        }
       }
 
       // 4. Agregar marcadores Hitos
       if (milestones && milestones.length > 0) {
         milestones.forEach((ms) => {
-          // Si el hito coincide con hoy, agregamos un CSS especial
-          const msDate = new Date(ms.date);
+          // Parseamos la fecha evitando el salto a UTC mediante el asenso a mediodía local
+          let msDate = new Date(ms.date);
+          if (ms.date.includes('-')) {
+            const parts = ms.date.split('T')[0].split('-');
+            if (parts.length === 3) {
+              msDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+            }
+          }
           
           if (addMarker) {
-            addMarker({
-              id: `milestone_${ms.id}`,
-              start_date: new Date(ms.date),
-              css: 'project-milestone',
-              text: ms.name,
-              title: `${ms.name}: ${format(msDate, 'dd/MM/yyyy')}`
-            });
+            try {
+              addMarker({
+                id: `milestone_${ms.id}`,
+                start_date: msDate,
+                css: 'project-milestone',
+                text: ms.name,
+                title: `${ms.name}: ${format(msDate, 'dd/MM/yyyy')}`
+              });
+            } catch (err) {
+              console.warn('Marker plugin not ready, skipping milestone marker:', err);
+            }
           }
         });
       }

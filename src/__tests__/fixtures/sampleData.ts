@@ -1,4 +1,4 @@
-import type { Project, Partida, Item, Activity, DailyProgress, Alert } from '@/lib/types';
+import type { Project, Activity, DailyProgress } from '@/lib/types';
 
 export const sampleProject: Project = {
   id: 'proj-123',
@@ -43,3 +43,16 @@ export const samplePartidas = [
     ]
   }
 ];
+
+export const sampleDailyProgressMultiDate: DailyProgress[] = [
+  { id: 'dp-m1', activity_id: 'act-1', date: '2026-03-01', progress_percent: 10, notes: '', created_by: null, created_at: '' },
+  { id: 'dp-m2', activity_id: 'act-1', date: '2026-03-02', progress_percent: 20, notes: '', created_by: null, created_at: '' }
+];
+
+export const sampleActivityWithPhotos = {
+  id: 'act-3', item_id: 'item-1', name: 'Act. con fotos', start_date: '2026-03-01', end_date: '2026-03-05', weight: 10, sort_order: 2, created_at: '', updated_at: ''
+};
+
+export const sampleEmptyPartida = {
+  id: 'partida-empty', project_id: 'proj-123', name: 'Partida Vacia', sort_order: 1, created_at: '', items: []
+};

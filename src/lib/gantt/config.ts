@@ -1,3 +1,5 @@
+import type { GanttTaskData } from './types';
+
 export const GANTT_LOCALE_ES = {
   date: {
     month_full: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
@@ -20,59 +22,62 @@ export const GANTT_LOCALE_ES = {
   }
 };
 
-export const GANTT_ZOOM_CONFIG = {
-  levels: [
-    {
-      name: "day",
-      scale_height: 60,
-      min_column_width: 35,
-      scales: [
-        { unit: "month", step: 1, format: "%F %Y" },
-        {
-          unit: "day",
-          step: 1,
-          format: (date: Date) => {
-            const dias = ["D", "L", "M", "X", "J", "V", "S"];
-            return `<div style="line-height:1;display:flex;flex-direction:column;align-items:center;padding-top:4px;gap:2px;">
-                      <span style="font-size:10px;color:rgba(100,116,139,0.8);">${dias[date.getDay()]}</span>
-                      <span style="font-size:11px;color:var(--color-surface-100);font-weight:700;">${date.getDate()}</span>
-                    </div>`;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getGanttZoomConfig(gantt: any) {
+  return {
+    levels: [
+      {
+        name: "day",
+        scale_height: 60,
+        min_column_width: 35,
+        scales: [
+          { unit: "month", step: 1, format: "%F %Y" },
+          {
+            unit: "day",
+            step: 1,
+            format: (date: Date) => {
+              const dias = ["D", "L", "M", "X", "J", "V", "S"];
+              return `<div style="line-height:1;display:flex;flex-direction:column;align-items:center;padding-top:4px;gap:2px;">
+                        <span style="font-size:10px;color:rgba(100,116,139,0.8);">${dias[date.getDay()]}</span>
+                        <span style="font-size:11px;color:var(--color-surface-100);font-weight:700;">${date.getDate()}</span>
+                      </div>`;
+            }
           }
-        }
-      ]
-    },
-    {
-      name: "week",
-      scale_height: 60,
-      min_column_width: 50,
-      scales: [
-        { unit: "month", step: 1, format: "%F %Y" },
-        {
-          unit: "week",
-          step: 1,
-          format: (date: Date, ganttDateToStr: (format: string) => (date: Date) => string) => {
-            const formatStr = ganttDateToStr("%W");
-            return `<div style="font-size:11px;color:rgba(100,116,139,0.9);padding-top:2px;">Sem ${formatStr(date)}</div>`;
+        ]
+      },
+      {
+        name: "week",
+        scale_height: 60,
+        min_column_width: 50,
+        scales: [
+          { unit: "month", step: 1, format: "%F %Y" },
+          {
+            unit: "week",
+            step: 1,
+            format: (date: Date) => {
+              const weekNum = gantt.date.date_to_str("%W")(date);
+              return `<div style="font-size:11px;color:rgba(100,116,139,0.9);padding-top:2px;">Sem ${weekNum}</div>`;
+            }
           }
-        }
-      ]
-    },
-    {
-      name: "month",
-      scale_height: 60,
-      min_column_width: 50,
-      scales: [
-        { unit: "year", step: 1, format: "%Y" },
-        { unit: "month", step: 1, format: "%M" }
-      ]
-    }
-  ]
-};
+        ]
+      },
+      {
+        name: "month",
+        scale_height: 60,
+        min_column_width: 50,
+        scales: [
+          { unit: "year", step: 1, format: "%Y" },
+          { unit: "month", step: 1, format: "%M" }
+        ]
+      }
+    ]
+  };
+}
 
-export function getTaskClass(_start: Date, _end: Date, task: { db_type: string; progress: number }): string {
+export function getTaskClass(_start: Date, _end: Date, task: Pick<GanttTaskData, 'db_type' | 'progress'>): string {
   if (task.db_type === 'partida') return 'is-partida-bar';
   if (task.db_type === 'item') return 'is-item-bar';
-  if (task.progress >= 1) return 'completed-task';
+  if (task.progress !== undefined && task.progress >= 1) return 'completed-task';
   return 'in-progress-task';
 }
 

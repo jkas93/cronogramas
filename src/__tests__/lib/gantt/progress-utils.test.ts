@@ -62,4 +62,21 @@ describe('Progress Utils', () => {
     const a2 = tasks.find(t => t.id === 'a_act-2');
     expect(a2?.progress).toBe(0.1); // 10%
   });
+
+  it('6. buildProgressMap ignora entradas sin activity_id', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map = buildProgressMap([{ id: '1', date: '2026-01-01', progress_percent: 10 }] as any);
+    expect(map.size).toBe(0);
+  });
+
+  it('7. buildTasksFromPartidas ignora activity sin start_date', () => {
+    const pConActRota = { ...samplePartidas[0], items: [{ ...samplePartidas[0].items[0], activities: [{ ...samplePartidas[0].items[0].activities[0], start_date: '' }] }] };
+    // Esperamos 1 partida + 1 item + 0 activities = 2 tasks
+    expect(buildTasksFromPartidas([pConActRota], new Map())).toHaveLength(2);
+  });
+
+  it('8. buildTasksFromPartidas muestra partida vacía sin items', () => {
+    const pVacia = { ...samplePartidas[0], items: [] };
+    expect(buildTasksFromPartidas([pVacia], new Map())).toHaveLength(1);
+  });
 });

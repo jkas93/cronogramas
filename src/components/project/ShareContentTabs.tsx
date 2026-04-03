@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import { GanttView } from '@/components/gantt/GanttView';
 import { SCurveChart } from '@/components/charts/SCurveChart';
 import { PublicDailyProgressView } from './PublicDailyProgressView';
+import type { Project, PartidaWithItems, DailyProgress } from '@/lib/types';
 
 interface Props {
-  project: any;
-  partidas: any[];
-  dailyProgress: any[];
-  milestones: any[];
+  project: Project;
+  partidas: PartidaWithItems[];
+  dailyProgress: DailyProgress[];
+  milestones: unknown[];
 }
 
 export function ShareContentTabs({ project, partidas, dailyProgress, milestones }: Props) {

@@ -62,6 +62,7 @@ export interface DailyProgress {
   date: string;
   progress_percent: number;
   notes: string | null;
+  photo_urls?: string[] | null;
   created_by: string | null;
   created_at: string;
   has_restriction?: boolean;
@@ -146,3 +147,30 @@ export interface GanttLink {
   target: string;
   type: string;
 }
+
+// =============================================================
+// Public Progress View types
+// =============================================================
+
+export interface ActivityProgress {
+  id: string;
+  name: string;
+  progressToday: number;
+  notes: string | null;
+  photos: string[];
+  hasRestriction: boolean;
+  restrictionReason: string | null;
+}
+
+export interface ItemProgress {
+  id: string;
+  name: string;
+  activities: ActivityProgress[];
+}
+
+export interface PartidaProgress {
+  id: string;
+  name: string;
+  items: ItemProgress[];
+}
+
