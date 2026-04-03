@@ -13,6 +13,7 @@ interface TeamModalProps {
 
 export function TeamModal({ projectId, projectName, isOwner, variant = 'button' }: TeamModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [emailToInvite, setEmailToInvite] = useState('');
@@ -83,9 +84,9 @@ export function TeamModal({ projectId, projectName, isOwner, variant = 'button' 
       setSearchStatus('¡Invitación enviada y usuario añadido!');
       fetchMembers();
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setSearchStatus('Error: ' + err.message);
+      setSearchStatus('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setInviting(false);
     }
@@ -100,7 +101,7 @@ export function TeamModal({ projectId, projectName, isOwner, variant = 'button' 
         .eq('user_id', userId);
         
       fetchMembers();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };
@@ -115,7 +116,7 @@ export function TeamModal({ projectId, projectName, isOwner, variant = 'button' 
         .eq('user_id', userId);
         
       fetchMembers();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };

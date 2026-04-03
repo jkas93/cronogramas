@@ -143,9 +143,9 @@ export function ImportExcelButton({ projectId }: Props) {
       }
 
       router.refresh(); // Reload Gantt data
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Ocurrió un error al procesar el archivo Excel.');
+      setError((err instanceof Error ? err.message : String(err)) || 'Ocurrió un error al procesar el archivo Excel.');
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
       setLoading(false);

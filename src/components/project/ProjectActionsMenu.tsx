@@ -7,6 +7,7 @@ import { TeamModal } from './TeamModal';
 import { ShareModal } from './ShareModal';
 
 interface ProjectActionsMenuProps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   project: any;
   isOwner: boolean;
 }

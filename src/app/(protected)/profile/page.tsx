@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [id, setId] = useState('');
+  const [systemRole, setSystemRole] = useState<'user'|'superadmin'>('user');
   const [successMessage, setSuccessMessage] = useState('');
   
   const supabase = createClient();
@@ -26,12 +27,13 @@ export default function ProfilePage() {
 
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url')
+          .select('full_name, avatar_url, system_role')
           .eq('id', user.id)
           .single();
 
         if (data) {
           setFullName(data.full_name || '');
+          setSystemRole(data.system_role || 'user');
         }
       }
       setLoading(false);
@@ -60,8 +62,8 @@ export default function ProfilePage() {
         setSuccessMessage('');
       }, 3000);
       
-    } catch (error: any) {
-      alert('Error actualizando perfil: ' + error.message);
+    } catch (err: unknown) {
+      alert('Error actualizando perfil: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -92,8 +94,10 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold text-surface-100">{fullName || 'Usuario'}</h2>
             <p className="text-sm text-surface-400">{email}</p>
-            <span className="inline-block mt-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20">
-              Cuenta Profesional
+            <span className={`inline-block mt-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${
+              systemRole === 'superadmin' ? 'bg-accent-500/10 text-accent-400 border border-accent-500/20' : 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+            }`}>
+              {systemRole === 'superadmin' ? '⚡ Superadministrador' : 'Cuenta Profesional'}
             </span>
           </div>
         </div>

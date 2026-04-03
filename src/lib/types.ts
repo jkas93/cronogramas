@@ -2,10 +2,13 @@
 // TypeScript type definitions for the Cronograma database
 // =============================================================
 
+export type SystemRole = 'user' | 'superadmin';
+
 export interface Profile {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  system_role: SystemRole;
   created_at: string;
 }
 

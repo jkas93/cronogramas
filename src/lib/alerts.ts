@@ -116,21 +116,33 @@ export function evaluateAlerts(
 export async function saveAlerts(
   alerts: Omit<Alert, 'id' | 'created_at'>[]
 ): Promise<void> {
+  if (alerts.length === 0) return;
   const supabase = await createClient();
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  for (const alert of alerts) {
-    // Check if a similar alert was already created today
-    const { data: existing } = await supabase
-      .from('alerts')
-      .select('id')
-      .eq('project_id', alert.project_id)
-      .eq('type', alert.type)
-      .gte('created_at', `${today}T00:00:00`)
-      .maybeSingle();
+  // Phase 1: Fetch all alerts of the same types for this project today (O(1) query)
+  const alertTypes = Array.from(new Set(alerts.map(a => a.type)));
+  const { data: existingAlerts } = await supabase
+    .from('alerts')
+    .select('type, activity_id')
+    .eq('project_id', alerts[0].project_id)
+    .in('type', alertTypes)
+    .gte('created_at', `${today}T00:00:00`);
 
-    if (!existing) {
-      await supabase.from('alerts').insert(alert);
-    }
+  // Phase 2: Create a Set of existing "keys" to deduplicate locally
+  const existingSet = new Set(
+    (existingAlerts || []).map(a => `${a.type}:${a.activity_id || 'global'}`)
+  );
+
+  // Phase 3: Filter out alerts that already exist
+  const newAlerts = alerts.filter(a => {
+    const key = `${a.type}:${a.activity_id || 'global'}`;
+    return !existingSet.has(key);
+  });
+
+  // Phase 4: Bulk insert new alerts
+  if (newAlerts.length > 0) {
+    const { error } = await supabase.from('alerts').insert(newAlerts);
+    if (error) console.error('Error saving batch alerts:', error);
   }
 }

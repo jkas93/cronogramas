@@ -1,12 +1,10 @@
 import {
-  differenceInDays,
   eachDayOfInterval,
   format,
   parseISO,
   isAfter,
   isBefore,
   isEqual,
-  min as minDate,
   max as maxDate,
 } from 'date-fns';
 import type { Activity, DailyProgress, SCurvePoint, SCurveData } from './types';
@@ -149,15 +147,17 @@ export function calculateSCurve(
   // Calculate cumulative curves
   let cumulativePlanned = 0;
   let cumulativeActual = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   let currentPlanned = 0;
   let currentActual = 0;
 
+  // Lima Timezone (GMT-5) consistently
+  const nowLima = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Lima' }));
+  const today = new Date(nowLima.getFullYear(), nowLima.getMonth(), nowLima.getDate());
+
   let canContinueActual = true;
   const points: SCurvePoint[] = allDays.map((day) => {
-    const dayStr = format(day, 'yyyy-MM-dd');
+    // Manual date string formatting is faster than date-fns format() for thousands of calls
+    const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 
     // Planned: sum daily weights for activities active on this day ONLY if it's a working day
     let plannedGain = 0;
@@ -173,6 +173,7 @@ export function calculateSCurve(
     }
     cumulativePlanned += plannedGain;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     // Actual: sum recorded progress for this day (Actual can happen on any day)
     const actualGain = actualDailyGain.get(dayStr) || 0;
     cumulativeActual += actualGain;
@@ -181,8 +182,11 @@ export function calculateSCurve(
     const plannedPct = Math.min((cumulativePlanned / totalWeight) * 100, 100);
     const actualPct = (cumulativeActual / totalWeight) * 100;
 
-    // Track current day values
-    if (isEqual(day, today) || (isBefore(day, today) && isAfter(day, pStart))) {
+    // Track cumulative values for the target day (today OR the last project day if project ended)
+    const isTargetDay = (isEqual(day, today) || (isBefore(day, today) && isAfter(day, timelineStart)));
+    const isProjectEnd = isEqual(day, timelineEnd) && isAfter(today, timelineEnd);
+
+    if (isTargetDay || isProjectEnd) {
       currentPlanned = plannedPct;
       currentActual = actualPct;
     }

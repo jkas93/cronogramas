@@ -9,9 +9,12 @@ import { DailyPulseView } from '@/components/project/DailyPulseView';
 
 interface Props {
   project: Project;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   partidas: any[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   dailyProgress: any[];
   alerts: Alert[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   milestones: any[];
 }
 

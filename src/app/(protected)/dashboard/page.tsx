@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
 import { NewProjectButton } from '@/components/dashboard/NewProjectButton';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
 
@@ -9,31 +8,65 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch projects where user is owner or member
-  const { data: ownedProjects } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('owner_id', user!.id)
-    .order('created_at', { ascending: false });
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('system_role')
+    .eq('id', user!.id)
+    .single();
 
-  const { data: memberProjects } = await supabase
-    .from('project_members')
-    .select('project_id, role, projects(*)')
-    .eq('user_id', user!.id);
+  const isSuperadmin = profile?.system_role === 'superadmin';
 
-  // Deduplicate: filter out member projects where the user is already the owner
-  const ownedIds = new Set((ownedProjects || []).map((p) => p.id));
-  const filteredMemberProjects = (memberProjects || []).filter(
-    (m: any) => !ownedIds.has(m.project_id)
-  );
+  type ProjectData = {
+    id: string;
+    name: string;
+    description: string | null;
+    start_date: string;
+    end_date: string;
+    status: string;
+    created_at: string;
+    owner_id: string;
+    userRole: 'owner' | 'superadmin' | 'admin' | 'editor' | 'viewer';
+  };
 
-  const allProjects = [
-    ...(ownedProjects || []).map((p) => ({ ...p, userRole: 'owner' as const })),
-    ...filteredMemberProjects.map((m: any) => ({
-      ...(Array.isArray(m.projects) ? m.projects[0] : m.projects || {}),
-      userRole: m.role,
-    })).filter((p) => p.id), // Filter out missing/null projects
-  ];
+  let allProjects: ProjectData[] = [];
+
+  if (isSuperadmin) {
+    const { data } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    allProjects = (data || []).map(p => ({
+      ...p,
+      userRole: p.owner_id === user!.id ? 'owner' : 'superadmin'
+    }));
+  } else {
+    // Fetch projects where user is owner or member
+    const { data: ownedProjects } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('owner_id', user!.id)
+      .order('created_at', { ascending: false });
+
+    const { data: memberProjects } = await supabase
+      .from('project_members')
+      .select('project_id, role, projects(*)')
+      .eq('user_id', user!.id);
+
+    // Deduplicate: filter out member projects where the user is already the owner
+    const ownedIds = new Set((ownedProjects || []).map((p) => p.id));
+    const filteredMemberProjects = (memberProjects || []).filter(
+      (m: { project_id: string }) => !ownedIds.has(m.project_id)
+    );
+
+    allProjects = [
+      ...(ownedProjects || []).map((p) => ({ ...p, userRole: 'owner' as const })),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...filteredMemberProjects.map((m: { projects: any; role: string }) => ({
+        ...(Array.isArray(m.projects) ? m.projects[0] : m.projects || {}),
+        userRole: m.role,
+      })).filter((p) => p.id), // Filter out missing/null projects
+    ];
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto fade-in">

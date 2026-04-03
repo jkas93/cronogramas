@@ -5,6 +5,8 @@ import { NextResponse } from 'next/server';
  * Auth callback route — exchanges the auth code for a session.
  * Called by Supabase after email confirmation or OAuth redirect.
  */
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');

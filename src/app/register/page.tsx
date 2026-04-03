@@ -94,6 +94,7 @@ export default function RegisterPage() {
                 id="fullName"
                 type="text"
                 value={fullName}
+                autoComplete="name"
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Juan Pérez"
                 required
@@ -109,6 +110,7 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 value={email}
+                autoComplete="email"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
@@ -124,6 +126,7 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 value={password}
+                autoComplete="new-password"
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
                 required

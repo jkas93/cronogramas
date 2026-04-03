@@ -10,9 +10,13 @@ import { es } from 'date-fns/locale';
 
 export default function PrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [project, setProject] = useState<any>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [partidas, setPartidas] = useState<any[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dailyProgress, setDailyProgress] = useState<any[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +27,7 @@ export default function PrintPage({ params }: { params: Promise<{ id: string }> 
       const { data: pData } = await supabase.from('projects').select('*').eq('id', id).single();
       const { data: pList } = await supabase.from('partidas').select('*, items(*, activities(*))').eq('project_id', id).order('sort_order');
       
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
       const activityIds = (pList || []).flatMap((p: any) => p.items || []).flatMap((i: any) => i.activities || []).map((a: any) => a.id);
       const { data: dpData } = await supabase.from('daily_progress').select('*').in('activity_id', activityIds).order('date');
       

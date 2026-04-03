@@ -81,10 +81,14 @@ export default async function SharePage({ params }: Props) {
 
   // Fetch daily progress
   const activityIds = (partidas || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((p: any) => p.items || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((i: any) => i.activities || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((a: any) => a.id);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dailyProgress: any[] = [];
   if (activityIds.length > 0) {
     const { data } = await supabase

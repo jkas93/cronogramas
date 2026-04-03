@@ -3,10 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { evaluateAlerts, saveAlerts } from '@/lib/alerts';
 
-/**
- * Trigger alerts evaluation for a specific project.
- * Designed to be called from Client Components after progress updates.
- */
+
 export async function triggerProjectAlerts(projectId: string) {
   const supabase = await createClient();
 
@@ -32,12 +29,16 @@ export async function triggerProjectAlerts(projectId: string) {
     .eq('project_id', projectId);
 
   const activities = (partidas || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((p: any) => p.items || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((i: any) => i.activities || []);
 
   // 3. Fetch all daily progress
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activityIds = activities.map((a: any) => a.id);
   
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dailyProgress: any[] = [];
   if (activityIds.length > 0) {
     const { data } = await supabase

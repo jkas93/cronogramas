@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 /**
  * Sign out route — clears the session and redirects to login.
  */
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   await supabase.auth.signOut();

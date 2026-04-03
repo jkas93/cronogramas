@@ -12,6 +12,7 @@ interface MilestoneModalProps {
 
 export function MilestoneModal({ projectId, isOwner, onUpdate }: MilestoneModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -71,13 +72,14 @@ export function MilestoneModal({ projectId, isOwner, onUpdate }: MilestoneModalP
       fetchMilestones();
       onUpdate(); // Refresh Gantt
       
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err: unknown) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
   };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const startEdit = (m: any) => {
     setName(m.name);
     setDate(m.date);
@@ -100,7 +102,7 @@ export function MilestoneModal({ projectId, isOwner, onUpdate }: MilestoneModalP
         
       fetchMilestones();
       onUpdate(); // Refresh Gantt
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };

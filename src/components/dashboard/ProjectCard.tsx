@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Props {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   project: any;
 }
 
@@ -29,12 +30,16 @@ export async function ProjectCard({ project }: Props) {
     .eq('project_id', project.id);
 
   const activities = (partidas || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((p: any) => p.items || [])
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     .flatMap((i: any) => i.activities || []);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activityIds = activities.map((a: any) => a.id);
 
   // 3. Fetch daily progress
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dailyProgress: any[] = [];
   if (activityIds.length > 0) {
     const { data } = await supabase

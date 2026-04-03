@@ -45,7 +45,7 @@ describe('GanttSidebar', () => {
   it('4. Modo readonly deshabilita inputs', () => {
     render(<GanttSidebar {...defaultProps} readonly={true} />);
     const nameInput = screen.getByDisplayValue('Test Activity') as HTMLInputElement;
-    expect(nameInput.readOnly).toBe(true);
+    expect(nameInput.disabled).toBe(true);
   });
 
   it('5. Modo readonly oculta botón Guardar', () => {
