@@ -81,9 +81,9 @@ export function PulseActivityRow({
                 placeholder="0"
                 value={displayPercent}
                 onChange={(e) => onFieldChange('percent', e.target.value)}
-                className="w-20 h-10 text-center text-base font-black rounded-lg bg-white border border-surface-600 focus:border-accent-400 focus:ring-4 focus:ring-accent-400/20 outline-none transition-all text-surface-900 shadow-sm"
+                className="w-20 h-10 text-center text-base font-black rounded-lg bg-white border border-surface-600 focus:border-accent-400 focus:ring-4 focus:ring-accent-400/20 outline-none transition-all text-surface-100 shadow-sm"
               />
-              <span className="absolute -top-2.5 -right-1 text-[10px] bg-accent-500 text-surface-900 px-1 rounded font-black border border-surface-900 shadow-sm">%</span>
+              <span className="absolute -top-2.5 -right-1 text-[10px] bg-accent-500 text-primary-900 px-1 rounded font-black border border-surface-700 shadow-sm">%</span>
             </div>
           </div>
         </td>
