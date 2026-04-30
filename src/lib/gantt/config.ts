@@ -106,10 +106,12 @@ export const GANTT_COLUMNS = (readonly: boolean) => [
         `;
       }
 
+      const addTitle = task.db_type === 'partida' ? 'Añadir Ítem dentro' : 'Añadir Actividad dentro';
+
       return `
         <div class="gantt-custom-cell" style="display:flex;align-items:center;line-height:1.3;width:100%;height:100%;padding-right:12px;gap:8px;">
           ${!readonly && task.db_type !== 'activity' ? `
-            <div class="action-btn" data-action="add" style="cursor:pointer;padding:4px;border-radius:6px;color:#64748b;display:flex;align-items:center;transition:all 0.2s;background:rgba(100,116,139,0.05);" title="Añadir elemento debajo">${addIcon}</div>
+            <div class="action-btn" data-action="add" style="cursor:pointer;padding:4px;border-radius:6px;color:#64748b;display:flex;align-items:center;transition:all 0.2s;background:rgba(100,116,139,0.05);" title="${addTitle}">${addIcon}</div>
           ` : ''}
           <div class="gantt-clickable-text" style="display:flex;flex-direction:column;flex:1;overflow:hidden;cursor:text;padding:4px 0;">
             <span style="${titleColor} overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;" title="${task.text}">${task.text}</span>

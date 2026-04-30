@@ -114,8 +114,18 @@ export function GanttChart({
             if (btn) {
               const action = btn.getAttribute('data-action');
               if (action === 'add') {
-                const index = gantt.getTaskIndex(id);
-                gantt.createTask({ text: "Nueva Tarea", duration: 1 }, task.parent, index + 1);
+                // Validación estricta: No se pueden agregar sub-elementos a una actividad
+                if (task.db_type === 'activity') return false;
+                
+                const isPartida = task.db_type === 'partida';
+                const newText = isPartida ? 'Nuevo Ítem' : 'Nueva Actividad';
+                
+                // gantt.createTask(objeto, parent_id)
+                gantt.createTask({ text: newText, duration: 1 }, id);
+                
+                // Auto-expandir para que el usuario pueda ver lo que acaba de crear
+                gantt.open(id);
+                
                 return false;
               } else if (action === 'edit') {
                 const endRaw = task.end_date instanceof Date ? task.end_date : new Date(task.end_date);
