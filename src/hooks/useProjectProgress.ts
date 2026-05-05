@@ -13,11 +13,18 @@ export function useProjectProgress(
 ) {
   // 1. Encontrar la fecha inicial (más reciente con progreso o hoy)
   const initialDate = useMemo(() => {
-    if (dailyProgress.length > 0) {
-      const sorted = [...dailyProgress].sort((a, b) => b.date.localeCompare(a.date));
+    const validProgress = dailyProgress.filter(dp => 
+      Number(dp.progress_percent) > 0 || 
+      !!dp.notes || 
+      (dp.photo_urls && dp.photo_urls.length > 0) ||
+      dp.has_restriction
+    );
+
+    if (validProgress.length > 0) {
+      const sorted = [...validProgress].sort((a, b) => b.date.localeCompare(a.date));
       return sorted[0].date;
     }
-    return new Date().toISOString().split('T')[0];
+    return format(new Date(), 'yyyy-MM-dd');
   }, [dailyProgress]);
 
   const [selectedDate, setSelectedDate] = useState(initialDate);
@@ -122,7 +129,7 @@ export function useProjectProgress(
   }, [selectedDate]);
 
   const isToday = useMemo(() => {
-    return selectedDate === new Date().toISOString().split('T')[0];
+    return selectedDate === format(new Date(), 'yyyy-MM-dd');
   }, [selectedDate]);
 
   return {

@@ -140,8 +140,9 @@ export function calculateSCurve(
   }
 
   // Find the latest date of progress entries to stop the actual curve at that date
-  const latestProgressDate = dailyProgress.length > 0
-    ? maxDate(dailyProgress.map((dp) => parseISO(dp.date)))
+  const validProgress = dailyProgress.filter(dp => Number(dp.progress_percent) > 0 || !!dp.notes || (dp.photo_urls && dp.photo_urls.length > 0) || dp.has_restriction);
+  const latestProgressDate = validProgress.length > 0
+    ? maxDate(validProgress.map((dp) => parseISO(dp.date)))
     : null;
 
   // Calculate cumulative curves
