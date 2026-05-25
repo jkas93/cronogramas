@@ -73,6 +73,7 @@ export interface Activity {
 
 export interface DailyProgress {
   id: string;
+  project_id?: string;
   activity_id: string;
   date: string;
   progress_percent: number;

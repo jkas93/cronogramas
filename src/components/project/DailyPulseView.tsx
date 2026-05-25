@@ -209,6 +209,7 @@ export function DailyPulseView({ projectId, partidas, dailyProgress: initialDail
         
         const newRecord: DailyProgress = {
           id: `optimistic-${activityId}-${Date.now()}`,
+          project_id: projectId,
           activity_id: activityId,
           date: selectedDate,
           progress_percent: parseFloat(editVal.percent || '0'),

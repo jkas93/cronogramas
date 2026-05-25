@@ -82,6 +82,7 @@ export function usePulseSave({
         const finalReason = restrictionReason !== '' && restrictionReason !== undefined ? restrictionReason : info.existingTodayRestrictionReason || null;
 
         batchRecords.push({
+          project_id: projectId,
           activity_id: activityId,
           date: selectedDate,
           progress_percent: finalPercent,
